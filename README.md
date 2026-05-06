@@ -1,12 +1,12 @@
 ![Murphy Agent](assets/murphy.svg)
 
-# Murphy
+# MURPHY
 
-Personal AI pet/assistant framework built from scratch.
+Murphy is a small personal CLI agent I built for learning how agents work.
 
 ## What it does
 
-An "electronic pet" with personality that remembers you and can use tools.
+This is a learning project, not a production agent. It experiments with a few common agent building blocks:
 
 - **Tool calling**: Web search, file I/O, shell commands — extensible via decorators
 - **Long-term memory**: Remembers your preferences and facts across sessions via vector search
