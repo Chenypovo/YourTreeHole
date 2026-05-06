@@ -2,7 +2,7 @@
 model = "glm-5.1"
 
 [persona]
-path = "data/persona.md"
+path = "persona.md"
 
 [memory]
 chroma_path = "./data/memory"

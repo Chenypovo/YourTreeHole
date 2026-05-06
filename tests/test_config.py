@@ -39,6 +39,6 @@ input_prompt = ">>> "
 def test_app_config_uses_defaults_when_missing(tmp_path):
     config = AppConfig.from_file(str(tmp_path / "missing.toml"))
 
-    assert config.persona.path == "data/persona.md"
+    assert config.persona.path == "persona.md"
     assert config.memory.chroma_path == "./data/memory"
     assert config.agent.max_iterations == 10

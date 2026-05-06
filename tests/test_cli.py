@@ -53,7 +53,7 @@ class TestHandleCommand:
         mock_agent.max_iterations = 10
         mocker.patch("cli.main.AppConfig.from_file", return_value=AppConfig(
             llm=LLMSettings(model="glm-5.1"),
-            persona=PersonaSettings(path="data/persona.md"),
+            persona=PersonaSettings(path="persona.md"),
             memory=MemorySettings(chroma_path="./data/memory", enable_gating=True),
             agent=AgentSettings(max_iterations=10),
             ui=UISettings(show_input_rules=True, input_prompt="❯ "),
@@ -62,7 +62,7 @@ class TestHandleCommand:
         handle_command("/status", mock_agent)
         output = capsys.readouterr().out
         assert "glm-5.1" in output
-        assert "data/persona.md" in output
+        assert "persona.md" in output
         assert "./data/memory" in output
 
     def test_clear_calls_memory_clear(self, mock_agent):
@@ -167,7 +167,7 @@ def test_create_agent_uses_app_config(tmp_path, mocker):
 def test_render_startup_banner_shows_runtime_info(mock_agent, capsys):
     config = AppConfig(
         llm=LLMSettings(model="glm-5.1"),
-        persona=PersonaSettings(path="data/persona.md"),
+        persona=PersonaSettings(path="persona.md"),
         memory=MemorySettings(chroma_path="./data/memory", enable_gating=True),
         agent=AgentSettings(max_iterations=10),
         ui=UISettings(show_input_rules=True, input_prompt="❯ "),

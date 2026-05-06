@@ -12,7 +12,7 @@ class LLMSettings:
 
 @dataclass(frozen=True)
 class PersonaSettings:
-    path: str = "data/persona.md"
+    path: str = "persona.md"
 
 
 @dataclass(frozen=True)
