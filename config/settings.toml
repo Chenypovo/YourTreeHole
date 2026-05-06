@@ -1,0 +1,17 @@
+[llm]
+model = "glm-5.1"
+
+[persona]
+path = "data/persona.md"
+
+[memory]
+chroma_path = "./data/memory"
+enable_gating = true
+
+[agent]
+max_iterations = 10
+
+[ui]
+show_input_rules = true
+input_prompt = "❯ "
+input_rule_color = "cyan"

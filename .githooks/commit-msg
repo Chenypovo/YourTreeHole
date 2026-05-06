@@ -1,0 +1,9 @@
+#!/bin/sh
+set -eu
+
+msg_file="$1"
+tmp_file="${msg_file}.tmp"
+
+# Strip co-author trailers that some coding agents append automatically.
+sed '/^Co-authored-by:/Id' "$msg_file" > "$tmp_file"
+mv "$tmp_file" "$msg_file"

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Generator
+from typing import Any
 
 from core.context import ContextManager
 from core.llm import LLMClient, LLMResponse
@@ -24,17 +25,19 @@ class Agent:
         tools: ToolRegistry,
         context_manager: ContextManager,
         max_iterations: int = 10,
+        enable_memory_gating: bool = False,
     ):
         self.llm = llm
         self.memory = memory
         self.tools = tools
         self.context_manager = context_manager
         self.max_iterations = max_iterations
+        self.enable_memory_gating = enable_memory_gating
 
     def run(self, user_input: str) -> str:
         """Run one conversation turn using the ReAct loop."""
-        self.memory.add_message("user", user_input)
         messages = self.context_manager.build(user_input)
+        self.memory.add_message("user", user_input)
         tool_schemas = self.tools.get_schemas() or None
 
         response = None
@@ -43,6 +46,7 @@ class Agent:
 
             if not response.has_tool_calls:
                 self.memory.add_message("assistant", response.content)
+                self._maybe_save_long_term(user_input, response.content)
                 return response.content
 
             messages.append({
@@ -69,8 +73,8 @@ class Agent:
         """Run one turn with streaming. Yields (token, tool_name) tuples.
         tool_name is set when a tool is being executed, None for normal tokens.
         """
-        self.memory.add_message("user", user_input)
         messages = self.context_manager.build(user_input)
+        self.memory.add_message("user", user_input)
         tool_schemas = self.tools.get_schemas() or None
 
         response = None
@@ -88,6 +92,7 @@ class Agent:
             if not response or not response.has_tool_calls:
                 if response:
                     self.memory.add_message("assistant", response.content)
+                    self._maybe_save_long_term(user_input, response.content)
                 yield ("", None)  # signal done
                 return
 
@@ -112,8 +117,62 @@ class Agent:
 
         if response and response.content:
             self.memory.add_message("assistant", response.content)
+            self._maybe_save_long_term(user_input, response.content)
         yield ("", None)
 
+    def _maybe_save_long_term(self, user_input: str, assistant_output: str) -> None:
+        """Ask the LLM whether this turn contains stable long-term memory worth saving."""
+        if not self.enable_memory_gating:
+            return
+        if not user_input.strip() and not assistant_output.strip():
+            return
 
-# For type hint in run_stream
-from typing import Any
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "You decide whether a conversation turn contains durable user memory worth saving.\n"
+                    "Only save stable facts such as user preferences, identity, ongoing projects, goals, or recurring constraints.\n"
+                    "Do not save temporary requests, one-off questions, tool outputs, or assistant-only phrasing.\n"
+                    "Return strict JSON only with keys: should_save (boolean), memory (string), category (string)."
+                ),
+            },
+            {
+                "role": "user",
+                "content": (
+                    f"User message:\n{user_input}\n\n"
+                    f"Assistant reply:\n{assistant_output}\n\n"
+                    "Decide whether to save one concise memory about the user."
+                ),
+            },
+        ]
+
+        try:
+            decision = self.llm.chat(messages=messages, tools=None)
+            payload = _parse_json_object(decision.content)
+        except Exception:
+            return
+
+        if not payload.get("should_save"):
+            return
+
+        memory_text = str(payload.get("memory", "")).strip()
+        if not memory_text:
+            return
+
+        metadata = {
+            "source": "llm_gate",
+            "category": str(payload.get("category", "general")).strip() or "general",
+        }
+        self.memory.save_long_term(memory_text, metadata)
+
+
+def _parse_json_object(text: str) -> dict[str, Any]:
+    """Parse a JSON object from plain text or fenced code output."""
+    raw = text.strip()
+    if raw.startswith("```"):
+        lines = raw.splitlines()
+        if len(lines) >= 3:
+            raw = "\n".join(lines[1:-1]).strip()
+    return json.loads(raw)
+

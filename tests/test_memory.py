@@ -64,3 +64,30 @@ class TestLongTermMemory:
         m2 = Memory(chroma_path=path)
         results = m2.recall("持久化测试", top_k=1)
         assert any("持久化" in r for r in results)
+
+    def test_list_long_term_returns_sorted_entries(self, memory):
+        memory.save_long_term("第一条", {"type": "fact"})
+        memory.save_long_term("第二条", {"type": "fact"})
+
+        entries = memory.list_long_term()
+        assert len(entries) == 2
+        assert entries[0]["content"] == "第一条"
+        assert entries[1]["content"] == "第二条"
+
+    def test_update_long_term_by_index(self, memory):
+        memory.save_long_term("旧记忆", {"type": "fact"})
+
+        memory.update_long_term(1, "新记忆")
+
+        entries = memory.list_long_term()
+        assert entries[0]["content"] == "新记忆"
+        assert entries[0]["metadata"]["type"] == "fact"
+        assert "updated_at" in entries[0]["metadata"]
+
+    def test_delete_long_term_by_index(self, memory):
+        memory.save_long_term("会被删掉", {"type": "fact"})
+
+        deleted = memory.delete_long_term(1)
+
+        assert deleted["content"] == "会被删掉"
+        assert memory.long_term_count == 0

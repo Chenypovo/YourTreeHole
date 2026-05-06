@@ -35,6 +35,44 @@ class Memory:
             ids=[doc_id],
         )
 
+    def list_long_term(self) -> list[dict[str, Any]]:
+        """Return all long-term memories ordered by creation time."""
+        records = self._collection.get()
+        ids = records.get("ids", [])
+        documents = records.get("documents", [])
+        metadatas = records.get("metadatas", [])
+
+        items: list[dict[str, Any]] = []
+        for idx, doc_id in enumerate(ids):
+            metadata = metadatas[idx] or {}
+            items.append({
+                "id": doc_id,
+                "content": documents[idx],
+                "metadata": metadata,
+                "timestamp": float(metadata.get("timestamp", 0.0)),
+            })
+
+        items.sort(key=lambda item: (item["timestamp"], item["id"]))
+        return items
+
+    def update_long_term(self, index: int, content: str) -> dict[str, Any]:
+        """Update one long-term memory by 1-based display index."""
+        entry = self._get_long_term_entry(index)
+        metadata = dict(entry["metadata"])
+        metadata["updated_at"] = time.time()
+        self._collection.update(
+            ids=[entry["id"]],
+            documents=[content],
+            metadatas=[metadata],
+        )
+        return {"id": entry["id"], "content": content, "metadata": metadata}
+
+    def delete_long_term(self, index: int) -> dict[str, Any]:
+        """Delete one long-term memory by 1-based display index."""
+        entry = self._get_long_term_entry(index)
+        self._collection.delete(ids=[entry["id"]])
+        return entry
+
     def recall(self, query: str, top_k: int = 5) -> list[str]:
         """Retrieve relevant long-term memories by query."""
         count = self._collection.count()
@@ -74,3 +112,10 @@ class Memory:
     def long_term_count(self) -> int:
         """Return number of long-term memory entries."""
         return self._collection.count()
+
+    def _get_long_term_entry(self, index: int) -> dict[str, Any]:
+        """Resolve a 1-based memory index into a stored long-term entry."""
+        items = self.list_long_term()
+        if index < 1 or index > len(items):
+            raise IndexError(f"长期记忆编号超出范围: {index}")
+        return items[index - 1]

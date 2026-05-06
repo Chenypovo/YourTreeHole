@@ -1,6 +1,7 @@
 # tests/test_tools.py
 import pytest
 from core.tools import tool, ToolRegistry
+from tools.shell import shell_exec
 
 
 @tool(name="greet", description="Say hello to someone")
@@ -78,3 +79,25 @@ class TestToolRegistry:
     def test_empty_registry(self):
         registry = ToolRegistry()
         assert registry.get_schemas() == []
+
+    def test_list_tools_returns_names_and_descriptions(self):
+        registry = ToolRegistry()
+        registry.register(greet)
+
+        tools = registry.list_tools()
+
+        assert tools == [{"name": "greet", "description": "Say hello to someone"}]
+
+
+class TestShellExec:
+    def test_rejects_shell_metacharacters(self):
+        result = shell_exec("ls | cat")
+        assert "不支持 shell 特殊字符" in result
+
+    def test_rejects_blocked_commands(self):
+        result = shell_exec("python3 -V")
+        assert "不允许执行命令 'python3'" in result
+
+    def test_allows_simple_read_only_command(self):
+        result = shell_exec("echo hello")
+        assert result.strip() == "hello"

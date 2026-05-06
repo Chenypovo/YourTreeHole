@@ -16,10 +16,12 @@ class ContextManager:
         persona: str,
         memory: Memory,
         tool_registry: ToolRegistry,
+        model_name: str | None = None,
     ):
         self._persona = persona
         self._memory = memory
         self._tool_registry = tool_registry
+        self._model_name = model_name
 
     @property
     def memory(self) -> Memory:
@@ -32,10 +34,16 @@ class ContextManager:
         persona_path: str,
         memory: Memory,
         tool_registry: ToolRegistry,
+        model_name: str | None = None,
     ) -> ContextManager:
         """Create ContextManager with persona loaded from a markdown file."""
         persona = Path(persona_path).read_text(encoding="utf-8").strip()
-        return cls(persona=persona, memory=memory, tool_registry=tool_registry)
+        return cls(
+            persona=persona,
+            memory=memory,
+            tool_registry=tool_registry,
+            model_name=model_name,
+        )
 
     def build(self, user_input: str) -> list[dict[str, str]]:
         """Build the full message list for an LLM call.
@@ -45,7 +53,7 @@ class ContextManager:
         2. Short-term conversation history
         3. Current user message
         """
-        system_prompt = self._build_system_prompt()
+        system_prompt = self._build_system_prompt(user_input)
 
         messages: list[dict[str, str]] = [
             {"role": "system", "content": system_prompt},
@@ -60,12 +68,14 @@ class ContextManager:
 
         return messages
 
-    def _build_system_prompt(self) -> str:
+    def _build_system_prompt(self, user_input: str) -> str:
         """Build system prompt: persona + long-term memory."""
         parts = [self._persona]
+        if self._model_name:
+            parts.append(f"\n\n## 运行信息:\n- 你当前运行的模型是 `{self._model_name}`。")
 
-        # Recall relevant long-term memories (use persona as query for general context)
-        memories = self._memory.recall(self._persona, top_k=5)
+        # Recall memories relevant to the current request instead of the persona text.
+        memories = self._memory.recall(user_input, top_k=5)
         if memories:
             parts.append("\n\n## 关于用户的记忆:")
             for mem in memories:

@@ -7,6 +7,8 @@ dependencies = [
     "openai>=1.0",
     "chromadb>=0.5",
     "python-dotenv>=1.0",
+    "prompt-toolkit>=3.0",
+    "rich>=13.0",
 ]
 
 [project.optional-dependencies]
@@ -17,6 +19,11 @@ dev = [
 
 [project.scripts]
 myagent = "cli.main:main"
+murphy = "cli.main:main"
+
+[tool.setuptools.packages.find]
+include = ["cli", "cli.*", "core", "core.*", "tools", "tools.*"]
+exclude = ["data", "data.*", "config", "config.*", "docs", "docs.*", "tests", "tests.*"]
 
 [build-system]
 requires = ["setuptools>=68.0"]

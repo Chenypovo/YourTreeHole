@@ -1,5 +1,6 @@
 import pytest
 from unittest.mock import patch, MagicMock
+from core.config import LLMSettings
 from core.llm import LLMClient, LLMResponse
 
 
@@ -76,3 +77,14 @@ class TestLLMClient:
 
         client = LLMClient.from_env()
         assert client.model == "test-model"
+
+    def test_from_settings_prefers_configured_model(self, mocker):
+        mocker.patch.dict("os.environ", {
+            "OPENAI_BASE_URL": "http://test",
+            "OPENAI_API_KEY": "test-key",
+            "OPENAI_MODEL": "env-model",
+        })
+        mocker.patch("core.llm.OpenAI")
+
+        client = LLMClient.from_settings(LLMSettings(model="config-model"))
+        assert client.model == "config-model"

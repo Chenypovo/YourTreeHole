@@ -42,6 +42,26 @@ class TestContextManager:
         system_content = messages[0]["content"]
         assert "暗色" in system_content
 
+    def test_build_includes_model_name_when_provided(self, tmp_path):
+        memory = Memory(chroma_path=str(tmp_path / "ctx_model"))
+        tools = MagicMock()
+        ctx = ContextManager(
+            persona="你是一只猫",
+            memory=memory,
+            tool_registry=tools,
+            model_name="glm-5.1",
+        )
+
+        messages = ctx.build("你是什么模型")
+        assert "glm-5.1" in messages[0]["content"]
+
+    def test_build_uses_current_input_for_long_term_recall(self, context, mocker):
+        recall = mocker.patch.object(context.memory, "recall", return_value=[])
+
+        context.build("帮我选个主题")
+
+        recall.assert_called_once_with("帮我选个主题", top_k=5)
+
     def test_build_message_ordering(self, context):
         context.memory.add_message("user", "hi")
         context.memory.add_message("assistant", "hello")

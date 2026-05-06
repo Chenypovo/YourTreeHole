@@ -8,6 +8,8 @@ from typing import Any
 from dotenv import load_dotenv
 from openai import OpenAI
 
+from core.config import LLMSettings
+
 
 @dataclass
 class LLMResponse:
@@ -31,6 +33,15 @@ class LLMClient:
             base_url=os.environ["OPENAI_BASE_URL"],
             api_key=os.environ["OPENAI_API_KEY"],
             model=os.environ["OPENAI_MODEL"],
+        )
+
+    @classmethod
+    def from_settings(cls, settings: LLMSettings) -> LLMClient:
+        load_dotenv()
+        return cls(
+            base_url=os.environ["OPENAI_BASE_URL"],
+            api_key=os.environ["OPENAI_API_KEY"],
+            model=settings.model or os.environ["OPENAI_MODEL"],
         )
 
     def chat(

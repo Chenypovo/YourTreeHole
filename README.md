@@ -1,4 +1,6 @@
-# MyAgent
+![Murphy Agent](assets/murphy.svg)
+
+# Murphy
 
 Personal AI pet/assistant framework built from scratch.
 
@@ -22,7 +24,7 @@ cp .env.example .env
 # Edit .env with your OpenAI Compatible API settings
 
 # Run
-python -m cli.main
+murphy
 ```
 
 ## Architecture

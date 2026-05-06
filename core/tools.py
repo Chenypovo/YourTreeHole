@@ -72,6 +72,16 @@ class ToolRegistry:
         """Return OpenAI tool calling format schemas."""
         return list(self._schemas)
 
+    def list_tools(self) -> list[dict[str, str]]:
+        """Return registered tool names and descriptions for display."""
+        return [
+            {
+                "name": schema["function"]["name"],
+                "description": schema["function"]["description"],
+            }
+            for schema in self._schemas
+        ]
+
     def execute(self, name: str, args: dict[str, Any]) -> str:
         """Execute a tool by name. Returns result string or error message."""
         if name not in self._tools:
