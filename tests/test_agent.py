@@ -31,8 +31,8 @@ class TestAgentBasicLoop:
         # First call: LLM wants to call a tool
         tool_call = {
             "id": "call_1",
-            "name": "greet",
-            "arguments": json.dumps({"name": "world"}),
+            "type": "function",
+            "function": {"name": "greet", "arguments": json.dumps({"name": "world"})},
         }
 
         @tool(name="greet", description="Greet someone")
@@ -66,8 +66,8 @@ class TestAgentLoopSafety:
         # LLM always returns a tool call — would loop forever
         tool_call = {
             "id": "call_1",
-            "name": "greet",
-            "arguments": json.dumps({"name": "loop"}),
+            "type": "function",
+            "function": {"name": "greet", "arguments": json.dumps({"name": "loop"})},
         }
 
         @tool(name="greet", description="Greet")
@@ -86,8 +86,8 @@ class TestAgentLoopSafety:
     def test_tool_error_handled_gracefully(self, agent):
         tool_call = {
             "id": "call_1",
-            "name": "boom",
-            "arguments": "{}",
+            "type": "function",
+            "function": {"name": "boom", "arguments": "{}"},
         }
 
         @tool(name="boom", description="Always fails")

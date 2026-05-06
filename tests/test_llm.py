@@ -50,7 +50,7 @@ class TestLLMClient:
         result = client.chat([{"role": "user", "content": "search for test"}])
 
         assert result.has_tool_calls is True
-        assert result.tool_calls[0]["name"] == "search"
+        assert result.tool_calls[0]["function"]["name"] == "search"
 
     def test_chat_passes_tools_param(self, mocker):
         mock_create = mocker.patch("core.llm.OpenAI").return_value.chat.completions.create

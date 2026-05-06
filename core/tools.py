@@ -29,7 +29,17 @@ def _build_schema(func: Callable) -> dict[str, Any]:
         else:
             prop_type = type_map.get(param.annotation, "string")
 
-        properties[param_name] = {"type": prop_type}
+        # Extract description from docstring or parameter name
+        param_desc = param_name
+        if func.__doc__:
+            # Try to find parameter description in docstring
+            for line in func.__doc__.split("\n"):
+                stripped = line.strip()
+                if stripped.startswith(":param ") and param_name in stripped:
+                    param_desc = stripped.split(":", 2)[-1].strip()
+                    break
+
+        properties[param_name] = {"type": prop_type, "description": param_desc}
 
         if param.default is inspect.Parameter.empty:
             required.append(param_name)

@@ -60,8 +60,9 @@ class Agent:
             })
 
             for tc in response.tool_calls:
-                args = json.loads(tc["arguments"]) if isinstance(tc["arguments"], str) else tc["arguments"]
-                result = self.tools.execute(tc["name"], args)
+                func = tc["function"]
+                args = json.loads(func["arguments"]) if isinstance(func["arguments"], str) else func["arguments"]
+                result = self.tools.execute(func["name"], args)
                 messages.append({
                     "role": "tool",
                     "tool_call_id": tc["id"],

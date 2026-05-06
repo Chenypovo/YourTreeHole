@@ -36,8 +36,8 @@ def test_full_agent_loop_with_tool_call(tmp_path):
     llm.chat.side_effect = [
         LLMResponse(content="", tool_calls=[{
             "id": "call_1",
-            "name": "calculator",
-            "arguments": json.dumps({"expression": "2+3"}),
+            "type": "function",
+            "function": {"name": "calculator", "arguments": json.dumps({"expression": "2+3"})},
         }]),
         LLMResponse(content="2+3=5喵！", tool_calls=[]),
     ]

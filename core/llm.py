@@ -54,8 +54,11 @@ class LLMClient:
             for tc in message.tool_calls:
                 tool_calls.append({
                     "id": tc.id,
-                    "name": tc.function.name,
-                    "arguments": tc.function.arguments,
+                    "type": "function",
+                    "function": {
+                        "name": tc.function.name,
+                        "arguments": tc.function.arguments,
+                    },
                 })
 
         return LLMResponse(

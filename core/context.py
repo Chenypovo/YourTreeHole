@@ -1,7 +1,7 @@
 # core/context.py
 from __future__ import annotations
 
-import os
+from pathlib import Path
 from typing import Any
 
 from core.memory import Memory
@@ -13,27 +13,31 @@ class ContextManager:
 
     def __init__(
         self,
-        persona: str = "",
-        memory: Memory | None = None,
-        tool_registry: ToolRegistry | None = None,
+        persona: str,
+        memory: Memory,
+        tool_registry: ToolRegistry,
     ):
-        self.persona = persona
-        self.memory = memory
-        self.tool_registry = tool_registry
+        self._persona = persona
+        self._memory = memory
+        self._tool_registry = tool_registry
+
+    @property
+    def memory(self) -> Memory:
+        """Public read-only access to the memory instance."""
+        return self._memory
 
     @classmethod
     def from_file(
         cls,
         persona_path: str,
-        memory: Memory | None = None,
-        tool_registry: ToolRegistry | None = None,
+        memory: Memory,
+        tool_registry: ToolRegistry,
     ) -> ContextManager:
-        """Create a ContextManager with persona loaded from a file."""
-        with open(persona_path, "r", encoding="utf-8") as f:
-            persona = f.read().strip()
+        """Create ContextManager with persona loaded from a markdown file."""
+        persona = Path(persona_path).read_text(encoding="utf-8").strip()
         return cls(persona=persona, memory=memory, tool_registry=tool_registry)
 
-    def build(self, user_input: str) -> list[dict[str, Any]]:
+    def build(self, user_input: str) -> list[dict[str, str]]:
         """Build the full message list for an LLM call.
 
         Structure:
@@ -41,30 +45,30 @@ class ContextManager:
         2. Short-term conversation history
         3. Current user message
         """
-        messages: list[dict[str, Any]] = []
+        system_prompt = self._build_system_prompt()
 
-        # Build system prompt
-        system_parts: list[str] = []
-        if self.persona:
-            system_parts.append(self.persona)
-
-        # Add long-term memory recall if memory is available
-        if self.memory:
-            memories = self.memory.recall(user_input)
-            if memories:
-                memory_text = "\n".join(f"- {m}" for m in memories)
-                system_parts.append(f"\n长期记忆:\n{memory_text}")
-
-        if system_parts:
-            messages.append({"role": "system", "content": "\n".join(system_parts)})
+        messages: list[dict[str, str]] = [
+            {"role": "system", "content": system_prompt},
+        ]
 
         # Add short-term conversation history
-        if self.memory:
-            history = self.memory.get_context()
-            for msg in history:
-                messages.append({"role": msg["role"], "content": msg["content"]})
+        history = self._memory.get_context(max_tokens=3000)
+        messages.extend(history)
 
-        # Add current user message
+        # Add current user input
         messages.append({"role": "user", "content": user_input})
 
         return messages
+
+    def _build_system_prompt(self) -> str:
+        """Build system prompt: persona + long-term memory."""
+        parts = [self._persona]
+
+        # Recall relevant long-term memories (use persona as query for general context)
+        memories = self._memory.recall(self._persona, top_k=5)
+        if memories:
+            parts.append("\n\n## 关于用户的记忆:")
+            for mem in memories:
+                parts.append(f"- {mem}")
+
+        return "\n".join(parts)
