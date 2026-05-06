@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Generator
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -65,3 +66,54 @@ class LLMClient:
             content=message.content or "",
             tool_calls=tool_calls,
         )
+
+    def chat_stream(
+        self,
+        messages: list[dict[str, str]],
+        tools: list[dict[str, Any]] | None = None,
+    ) -> Generator[tuple[str, LLMResponse], None, None]:
+        """Stream chat. Yields (token, final_response) tuples.
+        final_response is None until the last yield, which contains the full response.
+        """
+        kwargs: dict[str, Any] = {
+            "model": self.model,
+            "messages": messages,
+            "stream": True,
+        }
+        if tools:
+            kwargs["tools"] = tools
+
+        stream = self._client.chat.completions.create(**kwargs)
+
+        content_parts: list[str] = []
+        tool_calls_map: dict[int, dict[str, Any]] = {}
+
+        for chunk in stream:
+            delta = chunk.choices[0].delta
+
+            if delta.content:
+                content_parts.append(delta.content)
+                yield (delta.content, None)
+
+            if delta.tool_calls:
+                for tc in delta.tool_calls:
+                    idx = tc.index
+                    if idx not in tool_calls_map:
+                        tool_calls_map[idx] = {
+                            "id": "",
+                            "type": "function",
+                            "function": {"name": "", "arguments": ""},
+                        }
+                    if tc.id:
+                        tool_calls_map[idx]["id"] = tc.id
+                    if tc.function:
+                        if tc.function.name:
+                            tool_calls_map[idx]["function"]["name"] += tc.function.name
+                        if tc.function.arguments:
+                            tool_calls_map[idx]["function"]["arguments"] += tc.function.arguments
+
+        final = LLMResponse(
+            content="".join(content_parts),
+            tool_calls=list(tool_calls_map.values()),
+        )
+        yield ("", final)

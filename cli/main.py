@@ -1,6 +1,11 @@
 # cli/main.py
 from __future__ import annotations
 
+from rich.console import Console
+from rich.markdown import Markdown
+from rich.panel import Panel
+from rich.text import Text
+
 from core.agent import Agent
 from core.context import ContextManager
 from core.llm import LLMClient
@@ -12,6 +17,7 @@ from tools.web_search import web_search
 from tools.file_ops import read_file, write_file
 from tools.shell import shell_exec
 
+console = Console()
 
 COMMANDS = {
     "/help": "显示帮助",
@@ -35,26 +41,31 @@ def handle_command(user_input: str, agent: Agent) -> bool | None:
 
     if cmd == "/clear":
         agent.memory.clear()
-        print("对话已清空。")
+        console.print("[dim]对话已清空。[/dim]")
         return True
 
     if cmd == "/history":
         ctx = agent.memory.get_context()
         for msg in ctx:
-            print(f"[{msg['role']}] {msg['content']}")
+            role = msg["role"]
+            if role == "user":
+                console.print(f"[bold cyan]你:[/bold cyan] {msg['content']}")
+            elif role == "assistant":
+                console.print(f"[bold magenta]小喵:[/bold magenta] {msg['content']}")
         return True
 
     if cmd == "/memory":
-        print(f"长期记忆: {agent.memory.long_term_count} 条")
+        count = agent.memory.long_term_count
+        console.print(f"[dim]长期记忆: {count} 条[/dim]")
         return True
 
     if cmd == "/persona":
-        print(agent.context_manager._persona)
+        console.print(Panel(agent.context_manager._persona, title="人格设定", border_style="dim"))
         return True
 
     if cmd == "/help":
         for cmd_name, desc in COMMANDS.items():
-            print(f"  {cmd_name:12s} {desc}")
+            console.print(f"  [bold green]{cmd_name:12s}[/bold green] {desc}")
         return True
 
     return None
@@ -88,15 +99,18 @@ def create_agent() -> Agent:
 
 def main():
     """Entry point for CLI."""
-    print("小喵上线了～输入 /help 查看命令\n")
+    console.print(Panel(
+        "[bold magenta]小喵上线了～[/bold magenta]\n[dim]输入 /help 查看命令[/dim]",
+        border_style="magenta",
+    ))
 
     agent = create_agent()
 
     while True:
         try:
-            user_input = input("你: ").strip()
+            user_input = console.input("[bold cyan]你:[/bold cyan] ").strip()
         except (EOFError, KeyboardInterrupt):
-            print("\n再见喵～")
+            console.print("\n[bold magenta]再见喵～[/bold magenta]")
             break
 
         if not user_input:
@@ -105,14 +119,32 @@ def main():
         # Handle slash commands
         result = handle_command(user_input, agent)
         if result is False:
-            print("再见喵～")
+            console.print("[bold magenta]再见喵～[/bold magenta]")
             break
         if result is True:
             continue
 
-        # Normal conversation
-        reply = agent.run(user_input)
-        print(f"\n小喵: {reply}\n")
+        # Streaming conversation
+        console.print()
+        collected = ""
+        tool_executing = False
+
+        for token, tool_name in agent.run_stream(user_input):
+            if tool_name:
+                # Tool is being executed
+                if not tool_executing:
+                    console.print(f"[dim yellow]  ⚙ 调用工具: {tool_name}[/dim yellow]")
+                    tool_executing = True
+            else:
+                tool_executing = False
+                if token:
+                    collected += token
+                    console.print(token, end="")
+
+        # Render final markdown in a panel
+        console.print()
+        console.print(Markdown(collected))
+        console.print()
 
 
 if __name__ == "__main__":
