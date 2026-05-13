@@ -1,0 +1,17 @@
+.env
+.DS_Store
+__pycache__/
+*.pyc
+data/.DS_Store
+data/bond.json
+data/memory/
+data/pet.json
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+data/memory/
+data/memories.md
+data/user_profile.md
+data/bond.json
+data/pet.json

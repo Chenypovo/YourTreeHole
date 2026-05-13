@@ -1,0 +1,17 @@
+[llm]
+model = "glm-4.7"
+
+[persona]
+path = "persona.md"
+
+[memory]
+data_dir = "./data"
+enable_gating = true
+profile_update_interval = 5
+
+[agent]
+
+[ui]
+show_input_rules = true
+input_prompt = "❯ "
+input_rule_color = "cyan"

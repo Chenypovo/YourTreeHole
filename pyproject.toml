@@ -1,0 +1,29 @@
+[project]
+name = "myagent"
+version = "0.2.0"
+description = "Treehole — an AI that never forgets you"
+requires-python = ">=3.11"
+dependencies = [
+    "openai>=1.0",
+    "python-dotenv>=1.0",
+    "prompt-toolkit>=3.0",
+    "rich>=13.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-mock>=3.12",
+]
+
+[project.scripts]
+myagent = "cli.main:main"
+murphy = "cli.main:main"
+
+[tool.setuptools.packages.find]
+include = ["cli", "cli.*", "core", "core.*"]
+exclude = ["data", "data.*", "config", "config.*", "docs", "docs.*", "tests", "tests.*"]
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"

@@ -1,0 +1,7 @@
+<svg width="960" height="260" viewBox="0 0 960 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Murphy Agent</title>
+  <desc id="desc">A cyan Murphy wordmark for the myagent project.</desc>
+  <rect width="960" height="260" rx="16" fill="#0d1117"/>
+  <text x="480" y="116" text-anchor="middle" fill="#22d3ee" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="64" font-weight="700">MURPHY</text>
+  <text x="480" y="170" text-anchor="middle" fill="#e6edf3" font-family="Menlo, Consolas, 'Courier New', monospace" font-size="22">personal CLI agent</text>
+</svg>
