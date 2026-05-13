@@ -1,8 +1,8 @@
 # core/memory.py
 from __future__ import annotations
 
-import chromadb
-import time
+from datetime import date
+from pathlib import Path
 from typing import Any
 
 
@@ -11,111 +11,170 @@ def _estimate_tokens(text: str) -> int:
     return max(1, len(text) // 4)
 
 
-class Memory:
-    def __init__(self, chroma_path: str = "./data/memory"):
+class FileMemory:
+    """File-based memory system for the treehole agent.
+
+    Short-term: in-memory conversation history.
+    Long-term: data/memories.md (Markdown, append-only).
+    """
+
+    def __init__(self, data_dir: str = "./data"):
         self._short_term: list[dict[str, str]] = []
-        self._chroma_client = chromadb.PersistentClient(path=chroma_path)
-        self._collection = self._chroma_client.get_or_create_collection(
-            name="long_term_memory",
-        )
+        self._data_dir = Path(data_dir)
+        self._data_dir.mkdir(parents=True, exist_ok=True)
+        self._memories_file = self._data_dir / "memories.md"
+
+        if not self._memories_file.exists():
+            self._memories_file.write_text("# 记忆\n", encoding="utf-8")
+
+    # ── Short-term (session) ──
 
     def add_message(self, role: str, content: str) -> None:
-        """Add a message to short-term memory."""
+        """Add a message to short-term conversation history."""
         self._short_term.append({"role": role, "content": content})
-
-    def save_long_term(self, content: str, metadata: dict[str, Any] | None = None) -> None:
-        """Save key information to long-term vector memory."""
-        metadata = metadata or {}
-        metadata["timestamp"] = time.time()
-
-        doc_id = f"mem_{len(self._collection.get()['ids'])}_{int(time.time())}"
-        self._collection.add(
-            documents=[content],
-            metadatas=[metadata],
-            ids=[doc_id],
-        )
-
-    def list_long_term(self) -> list[dict[str, Any]]:
-        """Return all long-term memories ordered by creation time."""
-        records = self._collection.get()
-        ids = records.get("ids", [])
-        documents = records.get("documents", [])
-        metadatas = records.get("metadatas", [])
-
-        items: list[dict[str, Any]] = []
-        for idx, doc_id in enumerate(ids):
-            metadata = metadatas[idx] or {}
-            items.append({
-                "id": doc_id,
-                "content": documents[idx],
-                "metadata": metadata,
-                "timestamp": float(metadata.get("timestamp", 0.0)),
-            })
-
-        items.sort(key=lambda item: (item["timestamp"], item["id"]))
-        return items
-
-    def update_long_term(self, index: int, content: str) -> dict[str, Any]:
-        """Update one long-term memory by 1-based display index."""
-        entry = self._get_long_term_entry(index)
-        metadata = dict(entry["metadata"])
-        metadata["updated_at"] = time.time()
-        self._collection.update(
-            ids=[entry["id"]],
-            documents=[content],
-            metadatas=[metadata],
-        )
-        return {"id": entry["id"], "content": content, "metadata": metadata}
-
-    def delete_long_term(self, index: int) -> dict[str, Any]:
-        """Delete one long-term memory by 1-based display index."""
-        entry = self._get_long_term_entry(index)
-        self._collection.delete(ids=[entry["id"]])
-        return entry
-
-    def recall(self, query: str, top_k: int = 5) -> list[str]:
-        """Retrieve relevant long-term memories by query."""
-        count = self._collection.count()
-        if count == 0:
-            return []
-
-        results = self._collection.query(
-            query_texts=[query],
-            n_results=min(top_k, count),
-        )
-
-        if not results["documents"] or not results["documents"][0]:
-            return []
-
-        return results["documents"][0]
 
     def get_context(self, max_tokens: int = 4000) -> list[dict[str, str]]:
         """Return truncated conversation history within token budget."""
         budget = max_tokens
         result: list[dict[str, str]] = []
-
-        # Keep most recent messages that fit
         for msg in reversed(self._short_term):
             tokens = _estimate_tokens(msg["content"])
             if budget - tokens < 0:
                 break
             result.insert(0, msg)
             budget -= tokens
-
         return result
 
     def clear(self) -> None:
         """Clear short-term memory (start new conversation)."""
         self._short_term.clear()
 
-    @property
-    def long_term_count(self) -> int:
-        """Return number of long-term memory entries."""
-        return self._collection.count()
+    # ── Long-term (memories.md) ──
 
-    def _get_long_term_entry(self, index: int) -> dict[str, Any]:
-        """Resolve a 1-based memory index into a stored long-term entry."""
-        items = self.list_long_term()
-        if index < 1 or index > len(items):
-            raise IndexError(f"长期记忆编号超出范围: {index}")
-        return items[index - 1]
+    def save_memory(self, content: str, category: str = "general", resolved: bool = False) -> None:
+        """Append a memory entry to memories.md under today's date."""
+        check = "x" if resolved else " "
+        today = date.today().isoformat()
+        entry = f"- [{check}] [{category}] {content}"
+
+        text = self._memories_file.read_text(encoding="utf-8")
+        today_header = f"## {today}"
+
+        if today_header in text:
+            # Find today's section and append to it
+            lines = text.split("\n")
+            insert_idx = len(lines)
+            found_today = False
+            for i, line in enumerate(lines):
+                if line.strip() == today_header:
+                    found_today = True
+                    # Find the end of this date's entries
+                    for j in range(i + 1, len(lines)):
+                        if lines[j].startswith("## "):
+                            insert_idx = j
+                            break
+                    else:
+                        insert_idx = len(lines)
+                    break
+
+            lines.insert(insert_idx, entry)
+            self._memories_file.write_text("\n".join(lines), encoding="utf-8")
+        else:
+            # New date section
+            self._memories_file.write_text(
+                text.rstrip() + f"\n\n{today_header}\n{entry}\n",
+                encoding="utf-8",
+            )
+
+    def list_memories(self) -> list[dict[str, Any]]:
+        """Parse and return all memories from memories.md."""
+        text = self._memories_file.read_text(encoding="utf-8")
+        entries: list[dict[str, Any]] = []
+        current_date = ""
+
+        for line in text.split("\n"):
+            if line.startswith("## "):
+                current_date = line[3:].strip()
+            elif line.startswith("- ["):
+                resolved = line[3] == "x"
+                rest = line[6:]  # starts at "[" of [category]
+                cat_inner = rest[1:]  # skip "[", e.g. "偏好] 用户喜欢猫"
+                cat_end = cat_inner.find("]")
+                if cat_end != -1:
+                    category = cat_inner[:cat_end]
+                    content = cat_inner[cat_end + 1:].strip()
+                else:
+                    category = "general"
+                    content = cat_inner.strip()
+                entries.append({
+                    "date": current_date,
+                    "category": category,
+                    "content": content,
+                    "resolved": resolved,
+                })
+
+        return entries
+
+    def delete_memory(self, index: int) -> dict[str, Any]:
+        """Delete a memory by 1-based index. Returns the deleted entry."""
+        entries = self.list_memories()
+        if index < 1 or index > len(entries):
+            raise IndexError(f"记忆编号超出范围: {index}")
+
+        target = entries[index - 1]
+        lines = self._memories_file.read_text(encoding="utf-8").split("\n")
+        current_date = ""
+        entry_count = 0
+        new_lines = []
+        for line in lines:
+            if line.startswith("## "):
+                current_date = line[3:].strip()
+                new_lines.append(line)
+            elif line.startswith("- [") and current_date:
+                entry_count += 1
+                if entry_count != index:
+                    new_lines.append(line)
+            else:
+                new_lines.append(line)
+
+        self._memories_file.write_text("\n".join(new_lines), encoding="utf-8")
+        return target
+
+    def get_recent_memories(self, n: int = 20) -> list[dict[str, Any]]:
+        """Return the N most recent memories."""
+        entries = self.list_memories()
+        return entries[-n:]
+
+    def get_unresolved_events(self) -> list[dict[str, Any]]:
+        """Return all unresolved memories."""
+        return [e for e in self.list_memories() if not e["resolved"]]
+
+    def resolve_memory(self, index: int) -> dict[str, Any]:
+        """Mark a memory as resolved by 1-based index."""
+        entries = self.list_memories()
+        if index < 1 or index > len(entries):
+            raise IndexError(f"记忆编号超出范围: {index}")
+
+        lines = self._memories_file.read_text(encoding="utf-8").split("\n")
+        current_date = ""
+        entry_count = 0
+        for i, line in enumerate(lines):
+            if line.startswith("## "):
+                current_date = line[3:].strip()
+            elif line.startswith("- [") and current_date:
+                entry_count += 1
+                if entry_count == index:
+                    lines[i] = line.replace("- [ ]", "- [x]", 1)
+                    break
+
+        self._memories_file.write_text("\n".join(lines), encoding="utf-8")
+        return entries[index - 1]
+
+    @property
+    def memory_count(self) -> int:
+        """Return total number of long-term memories."""
+        return len(self.list_memories())
+
+    @property
+    def data_dir(self) -> Path:
+        return self._data_dir

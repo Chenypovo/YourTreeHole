@@ -3,127 +3,93 @@ from __future__ import annotations
 
 import json
 from collections.abc import Generator
-from typing import Any
+from threading import Thread
+from typing import TYPE_CHECKING, Any
 
 from core.context import ContextManager
 from core.llm import LLMClient, LLMResponse
-from core.memory import Memory
-from core.tools import ToolRegistry
+from core.memory import FileMemory
+from core.profile import UserProfile
+
+if TYPE_CHECKING:
+    from core.emotion import EmotionEngine
 
 
 class Agent:
-    """ReAct (Reason-Act-Observe) loop agent.
+    """Simple chat agent for the treehole.
 
-    Orchestrates: receive user input -> build context -> call LLM ->
-    if tool calls, execute tools and loop -> if text reply, store and return.
+    No ReAct loop, no tools. Just: build context -> call LLM -> save memory.
     """
 
     def __init__(
         self,
         llm: LLMClient,
-        memory: Memory,
-        tools: ToolRegistry,
+        memory: FileMemory,
+        profile: UserProfile,
         context_manager: ContextManager,
-        max_iterations: int = 10,
         enable_memory_gating: bool = False,
+        profile_update_interval: int = 5,
     ):
         self.llm = llm
         self.memory = memory
-        self.tools = tools
+        self.profile = profile
         self.context_manager = context_manager
-        self.max_iterations = max_iterations
         self.enable_memory_gating = enable_memory_gating
+        self._profile_update_interval = profile_update_interval
+        self._turn_count = 0
+        self.emotion: EmotionEngine | None = None
+
+    def attach_emotion(self, emotion: "EmotionEngine") -> None:
+        self.emotion = emotion
 
     def run(self, user_input: str) -> str:
-        """Run one conversation turn using the ReAct loop."""
+        """Run one conversation turn. No tools, no loops."""
         messages = self.context_manager.build(user_input)
         self.memory.add_message("user", user_input)
-        tool_schemas = self.tools.get_schemas() or None
 
-        response = None
-        for _ in range(self.max_iterations):
-            response = self.llm.chat(messages=messages, tools=tool_schemas)
+        response = self.llm.chat(messages=messages)
 
-            if not response.has_tool_calls:
-                self.memory.add_message("assistant", response.content)
-                self._maybe_save_long_term(user_input, response.content)
-                return response.content
+        self.memory.add_message("assistant", response.content)
+        self._finalize_turn(user_input, response.content)
 
-            messages.append({
-                "role": "assistant",
-                "content": response.content or "",
-                "tool_calls": response.tool_calls,
-            })
+        return response.content
 
-            for tc in response.tool_calls:
-                func = tc["function"]
-                args = json.loads(func["arguments"]) if isinstance(func["arguments"], str) else func["arguments"]
-                result = self.tools.execute(func["name"], args)
-                messages.append({
-                    "role": "tool",
-                    "tool_call_id": tc["id"],
-                    "content": result,
-                })
-
-        if response and response.content:
-            return response.content
-        return "抱歉，我处理这个请求时遇到了困难喵。"
-
-    def run_stream(self, user_input: str) -> Generator[tuple[str, str | None], None, None]:
-        """Run one turn with streaming. Yields (token, tool_name) tuples.
-        tool_name is set when a tool is being executed, None for normal tokens.
-        """
+    def run_stream(self, user_input: str) -> Generator[str, None, None]:
+        """Stream one conversation turn. Yields tokens."""
         messages = self.context_manager.build(user_input)
         self.memory.add_message("user", user_input)
-        tool_schemas = self.tools.get_schemas() or None
 
-        response = None
-        for _ in range(self.max_iterations):
-            full_content = ""
-            tool_calls_map: dict[int, dict[str, Any]] = {}
+        full_content = ""
+        for token, final in self.llm.chat_stream(messages=messages):
+            if token:
+                full_content += token
+                yield token
+            if final:
+                self.memory.add_message("assistant", final.content)
+                full_content = final.content
 
-            for token, final in self.llm.chat_stream(messages=messages, tools=tool_schemas):
-                if token:
-                    full_content += token
-                    yield (token, None)
-                if final:
-                    response = final
+        self._finalize_turn(user_input, full_content)
 
-            if not response or not response.has_tool_calls:
-                if response:
-                    self.memory.add_message("assistant", response.content)
-                    self._maybe_save_long_term(user_input, response.content)
-                yield ("", None)  # signal done
-                return
+    def _finalize_turn(self, user_input: str, assistant_output: str) -> None:
+        """Run slow post-turn tasks in background."""
+        self._turn_count += 1
 
-            # Process tool calls
-            messages.append({
-                "role": "assistant",
-                "content": response.content or "",
-                "tool_calls": response.tool_calls,
-            })
+        def worker() -> None:
+            if self.enable_memory_gating:
+                self._maybe_save_memory(user_input, assistant_output)
+            if self._turn_count % self._profile_update_interval == 0:
+                recent = "\n".join(
+                    f"{m['role']}: {m['content']}"
+                    for m in self.memory.get_context(max_tokens=2000)
+                )
+                self.profile.update(self.llm, recent)
+            if self.emotion:
+                self.emotion.process_turn(user_input, assistant_output)
 
-            for tc in response.tool_calls:
-                func = tc["function"]
-                args = json.loads(func["arguments"]) if isinstance(func["arguments"], str) else func["arguments"]
-                tool_name = func["name"]
-                yield ("\n", tool_name)  # signal tool execution
-                result = self.tools.execute(tool_name, args)
-                messages.append({
-                    "role": "tool",
-                    "tool_call_id": tc["id"],
-                    "content": result,
-                })
+        Thread(target=worker, daemon=True).start()
 
-        if response and response.content:
-            self.memory.add_message("assistant", response.content)
-            self._maybe_save_long_term(user_input, response.content)
-        yield ("", None)
-
-    def _maybe_save_long_term(self, user_input: str, assistant_output: str) -> None:
-        """Ask the LLM whether this turn contains stable long-term memory worth saving."""
-        if not self.enable_memory_gating:
-            return
+    def _maybe_save_memory(self, user_input: str, assistant_output: str) -> None:
+        """Ask LLM whether this turn contains memory worth saving."""
         if not user_input.strip() and not assistant_output.strip():
             return
 
@@ -131,19 +97,15 @@ class Agent:
             {
                 "role": "system",
                 "content": (
-                    "You decide whether a conversation turn contains durable user memory worth saving.\n"
-                    "Only save stable facts such as user preferences, identity, ongoing projects, goals, or recurring constraints.\n"
-                    "Do not save temporary requests, one-off questions, tool outputs, or assistant-only phrasing.\n"
-                    "Return strict JSON only with keys: should_save (boolean), memory (string), category (string)."
+                    "你判断一段对话是否包含值得长期记住的用户信息。\n"
+                    "值得记住的：用户偏好、身份、习惯、重要事件、情感状态、人际关系。\n"
+                    "不值得：临时问题、闲聊、纯工具输出。\n"
+                    "返回JSON: {\"should_save\": boolean, \"memory\": \"简短内容\", \"category\": \"偏好|事件|习惯|情感|人物|其他\"}"
                 ),
             },
             {
                 "role": "user",
-                "content": (
-                    f"User message:\n{user_input}\n\n"
-                    f"Assistant reply:\n{assistant_output}\n\n"
-                    "Decide whether to save one concise memory about the user."
-                ),
+                "content": f"用户: {user_input}\n助手: {assistant_output}\n\n是否值得记住？",
             },
         ]
 
@@ -160,11 +122,9 @@ class Agent:
         if not memory_text:
             return
 
-        metadata = {
-            "source": "llm_gate",
-            "category": str(payload.get("category", "general")).strip() or "general",
-        }
-        self.memory.save_long_term(memory_text, metadata)
+        category = str(payload.get("category", "其他")).strip()
+        resolved = category not in ("事件",)
+        self.memory.save_memory(memory_text, category=category, resolved=resolved)
 
 
 def _parse_json_object(text: str) -> dict[str, Any]:
@@ -175,4 +135,3 @@ def _parse_json_object(text: str) -> dict[str, Any]:
         if len(lines) >= 3:
             raw = "\n".join(lines[1:-1]).strip()
     return json.loads(raw)
-

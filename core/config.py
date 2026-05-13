@@ -17,13 +17,14 @@ class PersonaSettings:
 
 @dataclass(frozen=True)
 class MemorySettings:
-    chroma_path: str = "./data/memory"
+    data_dir: str = "./data"
     enable_gating: bool = True
+    profile_update_interval: int = 5
 
 
 @dataclass(frozen=True)
 class AgentSettings:
-    max_iterations: int = 10
+    pass
 
 
 @dataclass(frozen=True)

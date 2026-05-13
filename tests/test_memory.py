@@ -1,93 +1,104 @@
 # tests/test_memory.py
 import pytest
-import tempfile
-import os
-from core.memory import Memory
+from core.memory import FileMemory
 
 
 @pytest.fixture
 def memory(tmp_path):
-    return Memory(chroma_path=str(tmp_path / "test_memory"))
+    return FileMemory(data_dir=str(tmp_path / "data"))
 
 
 class TestShortTermMemory:
     def test_add_and_get_messages(self, memory):
-        memory.add_message("user", "hello")
-        memory.add_message("assistant", "hi there")
-
-        ctx = memory.get_context(max_tokens=4000)
+        memory.add_message("user", "你好")
+        memory.add_message("assistant", "嗨")
+        ctx = memory.get_context()
         assert len(ctx) == 2
-        assert ctx[0]["role"] == "user"
-        assert ctx[1]["content"] == "hi there"
+        assert ctx[0]["content"] == "你好"
 
     def test_clear_empties_short_term(self, memory):
-        memory.add_message("user", "hello")
+        memory.add_message("user", "test")
         memory.clear()
-        assert memory.get_context(max_tokens=4000) == []
+        assert memory.get_context() == []
 
     def test_get_context_truncates_by_tokens(self, memory):
-        # Add many messages, verify get_context respects max_tokens
         for i in range(50):
-            memory.add_message("user", f"message {i} " * 100)
-
-        ctx = memory.get_context(max_tokens=500)
-        total_text = " ".join(m["content"] for m in ctx)
-        # Each "message N " is ~2 tokens, 50*100 = 5000 tokens worth
-        # With max_tokens=500, should have significantly fewer messages
-        assert len(ctx) < 50
+            memory.add_message("user", f"msg {i} " * 100)
+        ctx = memory.get_context(max_tokens=200)
+        total = sum(len(m["content"]) // 4 for m in ctx)
+        assert total <= 200
 
 
 class TestLongTermMemory:
-    def test_save_and_recall(self, memory):
-        memory.save_long_term("用户喜欢暗色主题", {"type": "preference"})
-        results = memory.recall("用户喜欢什么主题", top_k=1)
-        assert len(results) >= 1
-        assert any("暗色" in r for r in results)
+    def test_save_creates_memories_file(self, memory):
+        memory.save_memory("用户喜欢暗色主题", "偏好")
+        assert (memory.data_dir / "memories.md").exists()
+        text = (memory.data_dir / "memories.md").read_text(encoding="utf-8")
+        assert "暗色主题" in text
 
-    def test_recall_returns_empty_when_no_match(self, memory):
-        results = memory.recall("完全不相关的内容 xyz", top_k=3)
-        assert isinstance(results, list)
+    def test_save_adds_date_header(self, memory):
+        from datetime import date
+        memory.save_memory("test", "general")
+        text = (memory.data_dir / "memories.md").read_text(encoding="utf-8")
+        assert date.today().isoformat() in text
 
-    def test_save_multiple_and_recall_top_k(self, memory):
-        memory.save_long_term("用户喜欢Python", {"type": "preference"})
-        memory.save_long_term("用户在写agent项目", {"type": "fact"})
-        memory.save_long_term("用户喜欢暗色主题", {"type": "preference"})
-
-        results = memory.recall("用户偏好", top_k=2)
-        assert len(results) <= 2
-
-    def test_long_term_persists_across_instances(self, tmp_path):
-        path = str(tmp_path / "persist_test")
-        m1 = Memory(chroma_path=path)
-        m1.save_long_term("持久化测试数据", {"type": "test"})
-
-        m2 = Memory(chroma_path=path)
-        results = m2.recall("持久化测试", top_k=1)
-        assert any("持久化" in r for r in results)
-
-    def test_list_long_term_returns_sorted_entries(self, memory):
-        memory.save_long_term("第一条", {"type": "fact"})
-        memory.save_long_term("第二条", {"type": "fact"})
-
-        entries = memory.list_long_term()
+    def test_save_multiple_same_day(self, memory):
+        memory.save_memory("first", "general")
+        memory.save_memory("second", "event")
+        entries = memory.list_memories()
         assert len(entries) == 2
-        assert entries[0]["content"] == "第一条"
-        assert entries[1]["content"] == "第二条"
+        assert entries[0]["content"] == "first"
+        assert entries[1]["content"] == "second"
 
-    def test_update_long_term_by_index(self, memory):
-        memory.save_long_term("旧记忆", {"type": "fact"})
+    def test_save_resolved_flag(self, memory):
+        memory.save_memory("done thing", "event", resolved=True)
+        entries = memory.list_memories()
+        assert entries[0]["resolved"] is True
 
-        memory.update_long_term(1, "新记忆")
+    def test_list_memories_empty(self, memory):
+        assert memory.list_memories() == []
 
-        entries = memory.list_long_term()
-        assert entries[0]["content"] == "新记忆"
-        assert entries[0]["metadata"]["type"] == "fact"
-        assert "updated_at" in entries[0]["metadata"]
+    def test_list_memories_parses_format(self, memory):
+        memory.save_memory("用户喜欢猫", "偏好")
+        memory.save_memory("周五面试", "事件")
+        entries = memory.list_memories()
+        assert len(entries) == 2
+        assert entries[0]["category"] == "偏好"
+        assert entries[1]["category"] == "事件"
 
-    def test_delete_long_term_by_index(self, memory):
-        memory.save_long_term("会被删掉", {"type": "fact"})
+    def test_delete_memory(self, memory):
+        memory.save_memory("keep this", "general")
+        memory.save_memory("delete this", "general")
+        deleted = memory.delete_memory(2)
+        assert deleted["content"] == "delete this"
+        assert len(memory.list_memories()) == 1
 
-        deleted = memory.delete_long_term(1)
+    def test_delete_out_of_range_raises(self, memory):
+        with pytest.raises(IndexError):
+            memory.delete_memory(1)
 
-        assert deleted["content"] == "会被删掉"
-        assert memory.long_term_count == 0
+    def test_get_recent_memories(self, memory):
+        for i in range(10):
+            memory.save_memory(f"mem {i}", "general")
+        recent = memory.get_recent_memories(3)
+        assert len(recent) == 3
+        assert recent[-1]["content"] == "mem 9"
+
+    def test_get_unresolved_events(self, memory):
+        memory.save_memory("unresolved", "event")
+        memory.save_memory("done", "event", resolved=True)
+        unresolved = memory.get_unresolved_events()
+        assert len(unresolved) == 1
+        assert unresolved[0]["content"] == "unresolved"
+
+    def test_resolve_memory(self, memory):
+        memory.save_memory("pending", "event")
+        memory.resolve_memory(1)
+        entries = memory.list_memories()
+        assert entries[0]["resolved"] is True
+
+    def test_memory_count(self, memory):
+        assert memory.memory_count == 0
+        memory.save_memory("a", "general")
+        memory.save_memory("b", "general")
+        assert memory.memory_count == 2

@@ -1,7 +1,11 @@
 .env
+.DS_Store
 __pycache__/
 *.pyc
+data/.DS_Store
+data/bond.json
 data/memory/
+data/pet.json
 .pytest_cache/
 *.egg-info/
 dist/

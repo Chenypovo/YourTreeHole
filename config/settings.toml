@@ -1,15 +1,15 @@
 [llm]
-model = "glm-5.1"
+model = "glm-4.7"
 
 [persona]
 path = "persona.md"
 
 [memory]
-chroma_path = "./data/memory"
+data_dir = "./data"
 enable_gating = true
+profile_update_interval = 5
 
 [agent]
-max_iterations = 10
 
 [ui]
 show_input_rules = true

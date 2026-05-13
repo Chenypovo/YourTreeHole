@@ -2,83 +2,96 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
 
-from core.memory import Memory
-from core.tools import ToolRegistry
+from core.memory import FileMemory
+from core.profile import UserProfile
 
 
 class ContextManager:
-    """Assembles the full message list for LLM calls."""
+    """Assembles the full message list for treehole LLM calls."""
 
     def __init__(
         self,
         persona: str,
-        memory: Memory,
-        tool_registry: ToolRegistry,
+        memory: FileMemory,
+        profile: UserProfile,
         model_name: str | None = None,
+        emotion=None,
     ):
         self._persona = persona
         self._memory = memory
-        self._tool_registry = tool_registry
+        self._profile = profile
         self._model_name = model_name
+        self._emotion = emotion
 
     @property
-    def memory(self) -> Memory:
-        """Public read-only access to the memory instance."""
+    def memory(self) -> FileMemory:
         return self._memory
+
+    @property
+    def profile(self) -> UserProfile:
+        return self._profile
+
+    @property
+    def persona(self) -> str:
+        return self._persona
+
+    @persona.setter
+    def persona(self, value: str) -> None:
+        self._persona = value
 
     @classmethod
     def from_file(
         cls,
         persona_path: str,
-        memory: Memory,
-        tool_registry: ToolRegistry,
+        memory: FileMemory,
+        profile: UserProfile,
         model_name: str | None = None,
+        emotion=None,
     ) -> ContextManager:
-        """Create ContextManager with persona loaded from a markdown file."""
         persona = Path(persona_path).read_text(encoding="utf-8").strip()
         return cls(
             persona=persona,
             memory=memory,
-            tool_registry=tool_registry,
+            profile=profile,
             model_name=model_name,
+            emotion=emotion,
         )
 
     def build(self, user_input: str) -> list[dict[str, str]]:
-        """Build the full message list for an LLM call.
-
-        Structure:
-        1. System prompt (persona + long-term memory recall)
-        2. Short-term conversation history
-        3. Current user message
-        """
-        system_prompt = self._build_system_prompt(user_input)
+        """Build the full message list for an LLM call."""
+        system_prompt = self._build_system_prompt()
 
         messages: list[dict[str, str]] = [
             {"role": "system", "content": system_prompt},
         ]
 
-        # Add short-term conversation history
         history = self._memory.get_context(max_tokens=3000)
         messages.extend(history)
 
-        # Add current user input
         messages.append({"role": "user", "content": user_input})
-
         return messages
 
-    def _build_system_prompt(self, user_input: str) -> str:
-        """Build system prompt: persona + long-term memory."""
+    def _build_system_prompt(self) -> str:
         parts = [self._persona]
-        if self._model_name:
-            parts.append(f"\n\n## 运行信息:\n- 你当前运行的模型是 `{self._model_name}`。")
 
-        # Recall memories relevant to the current request instead of the persona text.
-        memories = self._memory.recall(user_input, top_k=5)
-        if memories:
-            parts.append("\n\n## 关于用户的记忆:")
-            for mem in memories:
-                parts.append(f"- {mem}")
+        # Inject user profile
+        profile_text = self._profile.load()
+        if profile_text and "暂无记录" not in profile_text[:200]:
+            parts.append(f"\n\n## 关于用户:\n{profile_text}")
+
+        # Inject recent memories
+        recent = self._memory.get_recent_memories(10)
+        if recent:
+            parts.append("\n\n## 你记得的关于用户的事:")
+            for mem in recent:
+                check = "✓" if mem["resolved"] else "?"
+                parts.append(f"- [{check}] {mem['content']}")
+
+        if self._emotion:
+            parts.append(f"\n\n## 情感状态:\n{self._emotion.get_mood_prompt()}")
+
+        if self._model_name:
+            parts.append(f"\n\n## 运行信息:\n- 模型: `{self._model_name}`")
 
         return "\n".join(parts)

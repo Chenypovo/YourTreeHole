@@ -2,25 +2,23 @@
 import pytest
 from unittest.mock import MagicMock
 from core.context import ContextManager
-from core.memory import Memory
+from core.memory import FileMemory
+from core.profile import UserProfile
 
 
 @pytest.fixture
 def context(tmp_path):
-    memory = Memory(chroma_path=str(tmp_path / "ctx_test"))
-    tools = MagicMock()
-    tools.get_schemas.return_value = [
-        {"type": "function", "function": {"name": "test_tool"}}
-    ]
-    persona_text = "你是一只猫"
-    return ContextManager(persona=persona_text, memory=memory, tool_registry=tools)
+    data_dir = str(tmp_path / "ctx_test")
+    memory = FileMemory(data_dir=data_dir)
+    profile = UserProfile(data_dir=data_dir)
+    return ContextManager(persona="你是一个温暖的倾听者", memory=memory, profile=profile)
 
 
 class TestContextManager:
     def test_build_includes_system_prompt(self, context):
         messages = context.build("你好")
         assert messages[0]["role"] == "system"
-        assert "你是一只猫" in messages[0]["content"]
+        assert "倾听者" in messages[0]["content"]
 
     def test_build_includes_user_input(self, context):
         messages = context.build("你好")
@@ -29,61 +27,42 @@ class TestContextManager:
 
     def test_build_includes_short_term_history(self, context):
         context.memory.add_message("user", "早上好")
-        context.memory.add_message("assistant", "喵～早上好")
-
-        messages = context.build("今天天气怎么样")
+        context.memory.add_message("assistant", "嗯嗯")
+        messages = context.build("今天怎样")
         user_msgs = [m for m in messages if m["role"] == "user"]
         assert any("早上好" in m["content"] for m in user_msgs)
 
-    def test_build_includes_long_term_recall(self, context):
-        context.memory.save_long_term("用户喜欢暗色主题", {"type": "preference"})
+    def test_build_includes_profile(self, context):
+        context.profile.save("## 用户画像\n### 基本信息\n- 程序员")
+        messages = context.build("你好")
+        assert "程序员" in messages[0]["content"]
 
-        messages = context.build("帮我选个主题")
-        system_content = messages[0]["content"]
-        assert "暗色" in system_content
+    def test_build_includes_memories(self, context):
+        context.memory.save_memory("用户喜欢猫", "偏好")
+        messages = context.build("你好")
+        assert "喜欢猫" in messages[0]["content"]
 
-    def test_build_includes_model_name_when_provided(self, tmp_path):
-        memory = Memory(chroma_path=str(tmp_path / "ctx_model"))
-        tools = MagicMock()
-        ctx = ContextManager(
-            persona="你是一只猫",
-            memory=memory,
-            tool_registry=tools,
-            model_name="glm-5.1",
-        )
-
-        messages = ctx.build("你是什么模型")
-        assert "glm-5.1" in messages[0]["content"]
-
-    def test_build_uses_current_input_for_long_term_recall(self, context, mocker):
-        recall = mocker.patch.object(context.memory, "recall", return_value=[])
-
-        context.build("帮我选个主题")
-
-        recall.assert_called_once_with("帮我选个主题", top_k=5)
-
-    def test_build_message_ordering(self, context):
-        context.memory.add_message("user", "hi")
-        context.memory.add_message("assistant", "hello")
-
-        messages = context.build("new question")
-        assert messages[0]["role"] == "system"
-        # History messages in the middle
-        assert messages[-1]["role"] == "user"
-        assert messages[-1]["content"] == "new question"
+    def test_build_with_emotion(self, tmp_path):
+        data_dir = str(tmp_path / "ctx_emotion")
+        memory = FileMemory(data_dir=data_dir)
+        profile = UserProfile(data_dir=data_dir)
+        mock_emotion = MagicMock()
+        mock_emotion.get_mood_prompt.return_value = "你心情很好"
+        ctx = ContextManager(persona="test", memory=memory, profile=profile, emotion=mock_emotion)
+        messages = ctx.build("hi")
+        assert "心情" in messages[0]["content"]
 
     def test_persona_file_load(self, tmp_path):
+        data_dir = str(tmp_path / "ctx_file")
         persona_file = tmp_path / "persona.md"
-        persona_file.write_text("你是一只狗")
-
-        memory = Memory(chroma_path=str(tmp_path / "persona_test"))
-        tools = MagicMock()
-        tools.get_schemas.return_value = []
-
-        ctx = ContextManager.from_file(
-            persona_path=str(persona_file),
-            memory=memory,
-            tool_registry=tools,
-        )
+        persona_file.write_text("你是一只猫", encoding="utf-8")
+        memory = FileMemory(data_dir=data_dir)
+        profile = UserProfile(data_dir=data_dir)
+        ctx = ContextManager.from_file(persona_path=str(persona_file), memory=memory, profile=profile)
         messages = ctx.build("hi")
-        assert "你是一只狗" in messages[0]["content"]
+        assert "猫" in messages[0]["content"]
+
+    def test_persona_setter(self, context):
+        context.persona = "新人格"
+        messages = context.build("hi")
+        assert "新人格" in messages[0]["content"]
