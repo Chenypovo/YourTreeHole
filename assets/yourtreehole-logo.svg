@@ -1,69 +1,78 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="360" viewBox="0 0 1600 360" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="420" viewBox="0 0 1600 420" role="img" aria-labelledby="title desc">
   <title id="title">YourTreeHole</title>
-  <desc id="desc">A warm pixel-style YourTreeHole logo with soft shadows.</desc>
+  <desc id="desc">An elegant forest-toned banner logo for YourTreeHole.</desc>
   <defs>
-    <linearGradient id="night" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#11120f"/>
-      <stop offset="52%" stop-color="#182018"/>
-      <stop offset="100%" stop-color="#271a13"/>
+    <radialGradient id="warm-light" cx="72%" cy="18%" r="64%">
+      <stop offset="0%" stop-color="#f0dfb8" stop-opacity="0.42"/>
+      <stop offset="48%" stop-color="#7b5e3d" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#06110d" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="forest" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#09130f"/>
+      <stop offset="48%" stop-color="#13251c"/>
+      <stop offset="100%" stop-color="#231b13"/>
     </linearGradient>
-    <linearGradient id="letter" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#ffe28a"/>
-      <stop offset="49%" stop-color="#ffd25d"/>
-      <stop offset="50%" stop-color="#c9863b"/>
-      <stop offset="100%" stop-color="#a86831"/>
+    <linearGradient id="title-fill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fff7df"/>
+      <stop offset="58%" stop-color="#ead7ad"/>
+      <stop offset="100%" stop-color="#b89460"/>
     </linearGradient>
-    <filter id="soft-shadow" x="-10%" y="-20%" width="130%" height="150%">
-      <feDropShadow dx="10" dy="10" stdDeviation="0" flood-color="#4c2f1d" flood-opacity="0.9"/>
-      <feDropShadow dx="20" dy="20" stdDeviation="0" flood-color="#15110d" flood-opacity="0.8"/>
-      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#000000" flood-opacity="0.35"/>
+    <linearGradient id="hole" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f3527"/>
+      <stop offset="62%" stop-color="#092119"/>
+      <stop offset="100%" stop-color="#050b09"/>
+    </linearGradient>
+    <filter id="title-shadow" x="-8%" y="-40%" width="116%" height="190%">
+      <feDropShadow dx="0" dy="24" stdDeviation="20" flood-color="#000000" flood-opacity="0.45"/>
+      <feDropShadow dx="7" dy="8" stdDeviation="0" flood-color="#0a0d0b" flood-opacity="0.75"/>
     </filter>
-    <filter id="glow" x="-20%" y="-60%" width="140%" height="220%">
-      <feGaussianBlur stdDeviation="22" result="blur"/>
-      <feColorMatrix in="blur" type="matrix" values="1 0 0 0 1  0 0.75 0 0 0.58  0 0 0.35 0 0.18  0 0 0 0.7 0"/>
-      <feBlend in="SourceGraphic" mode="screen"/>
+    <filter id="soft-glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="14"/>
     </filter>
   </defs>
 
-  <rect width="1600" height="360" rx="28" fill="url(#night)"/>
-  <path d="M0 260 C230 218 385 250 560 218 C730 188 838 185 982 216 C1160 254 1315 232 1600 184 L1600 360 L0 360 Z" fill="#1d2c21" opacity="0.55"/>
-  <path d="M72 286 C190 256 264 270 360 252 C502 225 600 262 710 235 C882 194 972 216 1114 245 C1280 278 1400 248 1528 210" fill="none" stroke="#d6a65d" stroke-width="2" opacity="0.28"/>
+  <rect width="1600" height="420" rx="34" fill="url(#forest)"/>
+  <rect x="22" y="22" width="1556" height="376" rx="28" fill="none" stroke="#e6d3ab" stroke-opacity="0.18" stroke-width="2"/>
+  <rect width="1600" height="420" rx="34" fill="url(#warm-light)"/>
 
-  <g transform="translate(92 64)">
-    <text x="0" y="132"
-          font-family="Impact, Haettenschweiler, 'Arial Black', ui-sans-serif, system-ui, sans-serif"
-          font-size="124"
-          font-weight="900"
-          letter-spacing="6"
+  <g opacity="0.5">
+    <path d="M0 310 C210 252 390 303 552 264 C704 227 826 227 985 260 C1190 302 1350 270 1600 205 L1600 420 L0 420 Z" fill="#15271d"/>
+    <path d="M76 315 C230 278 360 291 505 265 C650 239 786 228 958 262 C1138 298 1325 282 1518 226" fill="none" stroke="#d9c091" stroke-width="2" stroke-opacity="0.22"/>
+  </g>
+
+  <g transform="translate(118 72)">
+    <circle cx="96" cy="106" r="74" fill="#173f30" opacity="0.82"/>
+    <circle cx="96" cy="106" r="39" fill="url(#hole)"/>
+    <path d="M96 36 C77 58 70 77 74 102 C77 128 71 151 54 172" fill="none" stroke="#e8d3a7" stroke-width="9" stroke-linecap="round" opacity="0.7"/>
+    <path d="M96 36 C117 62 123 84 119 108 C115 133 124 153 141 172" fill="none" stroke="#e8d3a7" stroke-width="9" stroke-linecap="round" opacity="0.7"/>
+    <path d="M66 74 C86 58 105 57 126 74" fill="none" stroke="#d7b673" stroke-width="8" stroke-linecap="round" opacity="0.74"/>
+    <circle cx="96" cy="106" r="76" fill="#d8b979" opacity="0.12" filter="url(#soft-glow)"/>
+  </g>
+
+  <g transform="translate(270 92)">
+    <text x="0" y="128"
+          font-family="Georgia, 'Times New Roman', ui-serif, serif"
+          font-size="118"
+          font-weight="700"
+          letter-spacing="1.5"
+          fill="url(#title-fill)"
+          filter="url(#title-shadow)">YourTreeHole</text>
+    <text x="3" y="128"
+          font-family="Georgia, 'Times New Roman', ui-serif, serif"
+          font-size="118"
+          font-weight="700"
+          letter-spacing="1.5"
           fill="none"
-          stroke="#f6c34f"
-          stroke-width="10"
-          opacity="0.28">YourTreeHole</text>
-    <text x="0" y="132"
-          font-family="Impact, Haettenschweiler, 'Arial Black', ui-sans-serif, system-ui, sans-serif"
-          font-size="124"
-          font-weight="900"
-          letter-spacing="6"
-          fill="url(#letter)"
-          stroke="#1b120c"
-          stroke-width="3"
-          paint-order="stroke fill"
-          filter="url(#soft-shadow)">YourTreeHole</text>
-    <text x="5" y="130"
-          font-family="Impact, Haettenschweiler, 'Arial Black', ui-sans-serif, system-ui, sans-serif"
-          font-size="124"
-          font-weight="900"
-          letter-spacing="6"
-          fill="#fff1b6"
-          opacity="0.18"
-          filter="url(#glow)">YourTreeHole</text>
+          stroke="#fff4d3"
+          stroke-width="1.2"
+          stroke-opacity="0.28">YourTreeHole</text>
 
-    <g transform="translate(12 180)">
-      <rect x="0" y="0" width="50" height="50" rx="14" fill="#274f3d"/>
-      <text x="25" y="35" text-anchor="middle" font-family="serif" font-size="34" font-weight="800" fill="#fff4cf">树</text>
-      <text x="70" y="33" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="28" fill="#f5e8c7" letter-spacing="1">
-        keep every small thought somewhere safe
-      </text>
-    </g>
+    <line x1="6" y1="176" x2="860" y2="176" stroke="#d8c194" stroke-width="2" stroke-opacity="0.28"/>
+    <text x="6" y="226"
+          font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+          font-size="30"
+          letter-spacing="1.2"
+          fill="#d9c7a5"
+          opacity="0.92">a private place for thoughts that should not be forgotten</text>
   </g>
 </svg>
