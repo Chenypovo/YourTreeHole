@@ -1,4 +1,4 @@
-![YourTreeHole](assets/yourtreehole-logo.svg)
+![YourTreeHole](assets/yourtreehole-logo-v2.svg)
 
 # YourTreeHole
 

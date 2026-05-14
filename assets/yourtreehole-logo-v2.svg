@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="420" viewBox="0 0 1600 420" role="img" aria-labelledby="title desc">
+  <title id="title">YourTreeHole</title>
+  <desc id="desc">A calm green YourTreeHole README banner with subtle TreeHole background text.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#e8f0dd"/>
+      <stop offset="52%" stop-color="#d7e7d4"/>
+      <stop offset="100%" stop-color="#c8dcc8"/>
+    </linearGradient>
+    <radialGradient id="light" cx="68%" cy="18%" r="70%">
+      <stop offset="0%" stop-color="#fff8df" stop-opacity="0.72"/>
+      <stop offset="54%" stop-color="#dce8d2" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#c6dac5" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="soft-shadow" x="-10%" y="-30%" width="120%" height="170%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#48634f" flood-opacity="0.22"/>
+      <feDropShadow dx="4" dy="5" stdDeviation="0" flood-color="#6f856d" flood-opacity="0.18"/>
+    </filter>
+    <pattern id="treehole-pattern" width="430" height="132" patternUnits="userSpaceOnUse" patternTransform="rotate(-8)">
+      <text x="0" y="82"
+            font-family="Georgia, 'Times New Roman', ui-serif, serif"
+            font-size="64"
+            font-weight="700"
+            letter-spacing="2"
+            fill="#7fa487"
+            opacity="0.14">TreeHole</text>
+    </pattern>
+  </defs>
+
+  <rect width="1600" height="420" rx="34" fill="url(#bg)"/>
+  <rect width="1600" height="420" rx="34" fill="url(#treehole-pattern)"/>
+  <rect width="1600" height="420" rx="34" fill="url(#light)"/>
+  <rect x="28" y="28" width="1544" height="364" rx="28" fill="none" stroke="#eff7e8" stroke-width="2" stroke-opacity="0.72"/>
+  <rect x="29" y="29" width="1542" height="362" rx="27" fill="none" stroke="#6f8d73" stroke-width="1" stroke-opacity="0.2"/>
+
+  <g transform="translate(0 8)">
+    <text x="800" y="178"
+          text-anchor="middle"
+          font-family="Georgia, 'Times New Roman', ui-serif, serif"
+          font-size="118"
+          font-weight="500"
+          letter-spacing="3"
+          fill="#55745d"
+          filter="url(#soft-shadow)">YourTreeHole</text>
+    <text x="800" y="178"
+          text-anchor="middle"
+          font-family="Georgia, 'Times New Roman', ui-serif, serif"
+          font-size="118"
+          font-weight="500"
+          letter-spacing="3"
+          fill="none"
+          stroke="#f7f0d7"
+          stroke-width="1.2"
+          stroke-opacity="0.55">YourTreeHole</text>
+
+    <g transform="translate(424 232)">
+      <rect x="0" y="-32" width="58" height="58" rx="18" fill="#5f8e6d"/>
+      <text x="29" y="8" text-anchor="middle"
+            font-family="Georgia, 'Times New Roman', ui-serif, serif"
+            font-size="38"
+            font-weight="700"
+            fill="#f8f3dc">树</text>
+      <text x="82" y="7"
+            font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+            font-size="30"
+            letter-spacing="0.8"
+            fill="#4c6654">"a quiet place for thoughts that should not be forgotten"</text>
+    </g>
+  </g>
+</svg>
