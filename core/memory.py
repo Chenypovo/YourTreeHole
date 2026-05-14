@@ -1,8 +1,9 @@
 # core/memory.py
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
+import re
 from typing import Any
 
 
@@ -16,6 +17,7 @@ class FileMemory:
 
     Short-term: in-memory conversation history.
     Long-term: data/memories.md (Markdown, append-only).
+    Journal: data/journal.md (raw conversation log, append-only).
     """
 
     def __init__(self, data_dir: str = "./data"):
@@ -23,9 +25,12 @@ class FileMemory:
         self._data_dir = Path(data_dir)
         self._data_dir.mkdir(parents=True, exist_ok=True)
         self._memories_file = self._data_dir / "memories.md"
+        self._journal_file = self._data_dir / "journal.md"
 
         if not self._memories_file.exists():
             self._memories_file.write_text("# 记忆\n", encoding="utf-8")
+        if not self._journal_file.exists():
+            self._journal_file.write_text("# 原始对话日记\n", encoding="utf-8")
 
     # ── Short-term (session) ──
 
@@ -50,6 +55,45 @@ class FileMemory:
         self._short_term.clear()
 
     # ── Long-term (memories.md) ──
+
+    def save_turn(self, user_input: str, assistant_output: str = "") -> None:
+        """Append a raw conversation turn to journal.md.
+
+        This is the durable source of truth. Gated memories and profile summaries
+        are derived from this log, so a failed LLM gating call cannot lose the
+        user's original thought.
+        """
+        if not user_input.strip() and not assistant_output.strip():
+            return
+
+        today = date.today().isoformat()
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        entry_parts = [
+            f"### {timestamp}",
+            "",
+            "**用户**",
+            _quote_block(user_input.strip()),
+        ]
+        if assistant_output.strip():
+            entry_parts.extend([
+                "",
+                "**助手**",
+                _quote_block(assistant_output.strip()),
+            ])
+        entry = "\n".join(entry_parts)
+
+        text = self._journal_file.read_text(encoding="utf-8")
+        today_header = f"## {today}"
+        if today_header in text:
+            self._journal_file.write_text(
+                text.rstrip() + f"\n\n{entry}\n",
+                encoding="utf-8",
+            )
+        else:
+            self._journal_file.write_text(
+                text.rstrip() + f"\n\n{today_header}\n\n{entry}\n",
+                encoding="utf-8",
+            )
 
     def save_memory(self, content: str, category: str = "general", resolved: bool = False) -> None:
         """Append a memory entry to memories.md under today's date."""
@@ -145,6 +189,50 @@ class FileMemory:
         entries = self.list_memories()
         return entries[-n:]
 
+    def get_relevant_memories(self, query: str, n: int = 10) -> list[dict[str, Any]]:
+        """Return memories with simple lexical relevance to the current query.
+
+        This intentionally stays dependency-free. It is not a replacement for a
+        vector index, but it prevents old Markdown memories from becoming
+        invisible just because they are no longer recent.
+        """
+        query = query.strip()
+        if not query:
+            return []
+
+        words = {
+            w.lower()
+            for w in re.findall(r"[A-Za-z0-9_\-]+", query)
+            if len(w) >= 2
+        }
+        query_chars = {
+            ch
+            for ch in query
+            if "\u4e00" <= ch <= "\u9fff"
+        }
+        if not words and not query_chars:
+            return []
+
+        scored: list[tuple[int, int, dict[str, Any]]] = []
+        for idx, entry in enumerate(self.list_memories()):
+            haystack = f"{entry['category']} {entry['content']}".lower()
+            score = 0
+            for word in words:
+                if word in haystack:
+                    score += len(word) * 3
+            if query_chars:
+                memory_chars = {
+                    ch
+                    for ch in entry["content"]
+                    if "\u4e00" <= ch <= "\u9fff"
+                }
+                score += len(query_chars & memory_chars)
+            if score > 0:
+                scored.append((score, idx, entry))
+
+        scored.sort(key=lambda item: (item[0], item[1]), reverse=True)
+        return [entry for _, _, entry in scored[:n]]
+
     def get_unresolved_events(self) -> list[dict[str, Any]]:
         """Return all unresolved memories."""
         return [e for e in self.list_memories() if not e["resolved"]]
@@ -178,3 +266,14 @@ class FileMemory:
     @property
     def data_dir(self) -> Path:
         return self._data_dir
+
+    @property
+    def journal_file(self) -> Path:
+        return self._journal_file
+
+
+def _quote_block(text: str) -> str:
+    """Render arbitrary text as a Markdown quote block."""
+    if not text:
+        return ">"
+    return "\n".join(f"> {line}" if line else ">" for line in text.splitlines())

@@ -73,11 +73,13 @@ class Agent:
     def _finalize_turn(self, user_input: str, assistant_output: str) -> None:
         """Run slow post-turn tasks in background."""
         self._turn_count += 1
+        turn_count = self._turn_count
+        self.memory.save_turn(user_input, assistant_output)
 
         def worker() -> None:
             if self.enable_memory_gating:
                 self._maybe_save_memory(user_input, assistant_output)
-            if self._turn_count % self._profile_update_interval == 0:
+            if turn_count % self._profile_update_interval == 0:
                 recent = "\n".join(
                     f"{m['role']}: {m['content']}"
                     for m in self.memory.get_context(max_tokens=2000)

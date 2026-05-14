@@ -37,10 +37,30 @@ class TestContextManager:
         messages = context.build("你好")
         assert "程序员" in messages[0]["content"]
 
+    def test_build_includes_profile_even_with_empty_sections(self, context):
+        context.profile.save(
+            "## 用户画像\n"
+            "### 基本信息\n"
+            "- （暂无记录）\n"
+            "### 当前状态\n"
+            "- 最近在学 agent\n"
+        )
+        messages = context.build("你好")
+        assert "最近在学 agent" in messages[0]["content"]
+
     def test_build_includes_memories(self, context):
         context.memory.save_memory("用户喜欢猫", "偏好")
         messages = context.build("你好")
         assert "喜欢猫" in messages[0]["content"]
+
+    def test_build_includes_relevant_old_memory(self, context):
+        context.memory.save_memory("用户喜欢在晚上写代码", "习惯")
+        for i in range(12):
+            context.memory.save_memory(f"普通记忆 {i}", "其他")
+
+        messages = context.build("今晚还想写代码")
+
+        assert "晚上写代码" in messages[0]["content"]
 
     def test_build_with_emotion(self, tmp_path):
         data_dir = str(tmp_path / "ctx_emotion")

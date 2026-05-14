@@ -36,6 +36,13 @@ class TestAgentSimpleChat:
         assert any(m["content"] == "你好" for m in ctx)
         assert any(m["content"] == "嗯嗯" for m in ctx)
 
+    def test_conversation_written_to_journal(self, agent):
+        agent.llm.chat.return_value = LLMResponse(content="我在听", tool_calls=[])
+        agent.run("最近有点累")
+        text = agent.memory.journal_file.read_text(encoding="utf-8")
+        assert "最近有点累" in text
+        assert "我在听" in text
+
     def test_message_sent_once(self, agent):
         agent.llm.chat.return_value = LLMResponse(content="hi", tool_calls=[])
         agent.run("test")

@@ -60,7 +60,7 @@ class ContextManager:
 
     def build(self, user_input: str) -> list[dict[str, str]]:
         """Build the full message list for an LLM call."""
-        system_prompt = self._build_system_prompt()
+        system_prompt = self._build_system_prompt(user_input)
 
         messages: list[dict[str, str]] = [
             {"role": "system", "content": system_prompt},
@@ -72,19 +72,40 @@ class ContextManager:
         messages.append({"role": "user", "content": user_input})
         return messages
 
-    def _build_system_prompt(self) -> str:
+    def _build_system_prompt(self, user_input: str) -> str:
         parts = [self._persona]
 
         # Inject user profile
         profile_text = self._profile.load()
-        if profile_text and "暂无记录" not in profile_text[:200]:
-            parts.append(f"\n\n## 关于用户:\n{profile_text}")
+        meaningful_profile = _strip_empty_profile_lines(profile_text)
+        if meaningful_profile:
+            parts.append(f"\n\n## 关于用户:\n{meaningful_profile}")
 
-        # Inject recent memories
+        unresolved = self._memory.get_unresolved_events()
+        if unresolved:
+            parts.append("\n\n## 还没闭环、适合自然追问的事:")
+            for mem in unresolved[:10]:
+                parts.append(f"- {mem['content']}")
+
+        # Inject relevant and recent memories. Relevant old memories come first so
+        # the agent can remember things beyond the most recent entries.
+        seen: set[tuple[str, str, str]] = set()
+        selected = []
+        for mem in self._memory.get_relevant_memories(user_input, 10):
+            key = (mem["date"], mem["category"], mem["content"])
+            if key not in seen:
+                selected.append(mem)
+                seen.add(key)
         recent = self._memory.get_recent_memories(10)
-        if recent:
+        for mem in recent:
+            key = (mem["date"], mem["category"], mem["content"])
+            if key not in seen:
+                selected.append(mem)
+                seen.add(key)
+
+        if selected:
             parts.append("\n\n## 你记得的关于用户的事:")
-            for mem in recent:
+            for mem in selected[:15]:
                 check = "✓" if mem["resolved"] else "?"
                 parts.append(f"- [{check}] {mem['content']}")
 
@@ -95,3 +116,20 @@ class ContextManager:
             parts.append(f"\n\n## 运行信息:\n- 模型: `{self._model_name}`")
 
         return "\n".join(parts)
+
+
+def _strip_empty_profile_lines(profile_text: str) -> str:
+    """Remove placeholder rows while preserving real profile content."""
+    lines = []
+    has_real_content = False
+    for line in profile_text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("- （暂无") or stripped.startswith("- (暂无"):
+            continue
+        if stripped:
+            lines.append(line)
+            if not stripped.startswith("#"):
+                has_real_content = True
+    if not has_real_content:
+        return ""
+    return "\n".join(lines).strip()

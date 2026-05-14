@@ -102,3 +102,18 @@ class TestLongTermMemory:
         memory.save_memory("a", "general")
         memory.save_memory("b", "general")
         assert memory.memory_count == 2
+
+    def test_save_turn_writes_raw_journal(self, memory):
+        memory.save_turn("我今天有点焦虑", "我在听。")
+        text = memory.journal_file.read_text(encoding="utf-8")
+        assert "我今天有点焦虑" in text
+        assert "我在听。" in text
+
+    def test_get_relevant_memories_finds_old_entries(self, memory):
+        memory.save_memory("用户喜欢在晚上写代码", "习惯", resolved=True)
+        for i in range(12):
+            memory.save_memory(f"普通记忆 {i}", "其他", resolved=True)
+
+        relevant = memory.get_relevant_memories("今晚还想写代码", n=3)
+
+        assert any("晚上写代码" in entry["content"] for entry in relevant)
