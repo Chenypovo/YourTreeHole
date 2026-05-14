@@ -1,5 +1,3 @@
-![Murphy Agent](assets/murphy.svg)
-
 # MURPHY
 
 [![English](https://img.shields.io/badge/English-README-315B46?style=for-the-badge)](README.en.md)
