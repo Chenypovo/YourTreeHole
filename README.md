@@ -1,4 +1,13 @@
-![Murphy Agent](assets/murphy.svg)
+<pre align="center">
+__   __                 _____              _   _       _
+\ \ / /__  _   _ _ __  |_   _| __ ___  ___| | | | ___ | | ___
+ \ V / _ \| | | | '__|   | || '__/ _ \/ _ \ |_| |/ _ \| |/ _ \
+  | | (_) | |_| | |      | || | |  __/  __/  _  | (_) | |  __/
+  |_|\___/ \__,_|_|      |_||_|  \___|\___|_| |_|\___/|_|\___|
+    \_\   \_\   \_\        \_\     \_\  \_\   \_\ \_\   \_\
+
+        a local-first AI treehole that remembers quietly
+</pre>
 
 # YourTreeHole
 
@@ -100,8 +109,6 @@ data_dir = "./data"
 enable_gating = true
 profile_update_interval = 5
 ```
-
-API key 不要写进 `config/settings.toml`。key 应该放在本地 `.env` 里。
 
 ## 本地数据
 
