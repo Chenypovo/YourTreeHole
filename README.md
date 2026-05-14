@@ -14,6 +14,16 @@ It is not a production product. I use it to learn how memory, profiles, streamin
 - **Relevant recall**: injects recent and query-related memories into the model context.
 - **CLI commands**: inspect and manage memory from the terminal.
 
+## Examples
+
+Murphy can remember what you shared before and naturally bring it up when you start a new session.
+
+![Proactive greeting example](assets/examples/proactive-greeting.png)
+
+It is designed as a quiet treehole for ongoing conversations, not a task agent.
+
+![Chat example](assets/examples/chat-example.png)
+
 ## Quick Start
 
 ```bash
