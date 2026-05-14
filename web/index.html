@@ -946,8 +946,8 @@
 <div class="persona-modal" id="persona-modal">
   <div class="persona-card">
     <h2>先定义这个树洞的性格。</h2>
-    <p>你可以让它像老朋友、像温柔的记录员，或者少说建议、少反问、先承接感受。性格设定和之后的一切记忆都会保存在你的本地。</p>
-    <textarea id="persona-input" placeholder="例如：你是一个温柔但不说教的树洞。你会认真听我说话，少给大道理，少反问，先帮我整理感受和反复出现的想法。"></textarea>
+    <p>树洞默认叫 Murphy；如果你想换名字，可以直接写进这段设定里。你也可以让它像老朋友、像温柔的记录员，或者少说建议、少反问、先承接感受。性格设定和之后的一切记忆都会保存在你的本地。</p>
+    <textarea id="persona-input" placeholder="例如：你的名字叫小树。你是一个温柔但不说教的树洞。你会认真听我说话，少给大道理，少反问，先帮我整理感受和反复出现的想法。"></textarea>
     <div class="persona-actions">
       <button class="skip-btn" onclick="closePersonaModal()">先用默认</button>
       <button class="save-persona-btn" onclick="savePersona()">保存性格</button>
@@ -1114,7 +1114,7 @@ async function loadPersonaSetup() {
     const res = await fetch("/api/persona");
     const data = await res.json();
     if (!data.needs_setup) return;
-    document.getElementById("persona-input").value = "你是一个温柔但不说教的树洞。你会认真听我说话，少给大道理，少反问，先帮我整理感受和反复出现的想法。";
+    document.getElementById("persona-input").value = "你的名字默认叫 Murphy；如果我给你改名，请使用我指定的名字。你是一个温柔但不说教的树洞。你会认真听我说话，少给大道理，少反问，先帮我整理感受和反复出现的想法。";
     document.getElementById("persona-modal").classList.add("show");
   } catch (e) {}
 }
