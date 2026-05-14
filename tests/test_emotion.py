@@ -160,7 +160,7 @@ def test_process_turn_level_up(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# 9. Mood prompt with low energy
+# 9. Mood prompt does not limit conversation length
 # ---------------------------------------------------------------------------
 
 def test_mood_prompt_low_energy(tmp_path):
@@ -169,4 +169,5 @@ def test_mood_prompt_low_energy(tmp_path):
     engine._energy = 15
 
     prompt = engine.get_mood_prompt()
-    assert "累" in prompt
+    assert "累" not in prompt
+    assert "精力" not in prompt

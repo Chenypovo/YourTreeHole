@@ -6,6 +6,7 @@ def test_app_config_loads_from_toml(tmp_path):
     config_file.write_text(
         """
 [llm]
+base_url = "http://config-base"
 model = "test-model"
 
 [persona]
@@ -28,6 +29,7 @@ input_prompt = ">>> "
     config = AppConfig.from_file(str(config_file))
 
     assert config.llm.model == "test-model"
+    assert config.llm.base_url == "http://config-base"
     assert config.persona.path == "data/test_persona.md"
     assert config.memory.data_dir == "./tmp/data"
     assert config.memory.enable_gating is False
@@ -40,6 +42,8 @@ def test_app_config_uses_defaults_when_missing(tmp_path):
     config = AppConfig.from_file(str(tmp_path / "missing.toml"))
 
     assert config.persona.path == "persona.md"
+    assert config.llm.base_url is None
+    assert config.llm.model is None
     assert config.memory.data_dir == "./data"
     assert config.memory.enable_gating is True
     assert config.memory.profile_update_interval == 5

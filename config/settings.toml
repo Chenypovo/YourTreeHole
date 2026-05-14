@@ -1,5 +1,8 @@
 [llm]
-model = "glm-4.7"
+# Public provider settings can live here.
+# Keep API keys in .env, never in this tracked config file.
+# base_url = "https://api.z.ai/api/coding/paas/v4"
+# model = "glm-5.1"
 
 [persona]
 path = "persona.md"

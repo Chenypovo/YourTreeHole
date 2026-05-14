@@ -39,7 +39,7 @@ class LLMClient:
     def from_settings(cls, settings: LLMSettings) -> LLMClient:
         load_dotenv()
         return cls(
-            base_url=os.environ["OPENAI_BASE_URL"],
+            base_url=settings.base_url or os.environ["OPENAI_BASE_URL"],
             api_key=os.environ["OPENAI_API_KEY"],
             model=settings.model or os.environ["OPENAI_MODEL"],
         )

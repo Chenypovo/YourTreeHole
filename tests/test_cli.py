@@ -1,7 +1,18 @@
 # tests/test_cli.py
 import pytest
 from unittest.mock import MagicMock, patch
-from cli.main import COMMANDS, SlashCommandCompleter, create_agent, handle_command, render_startup_banner
+from cli.main import (
+    COMMANDS,
+    DEFAULT_PERSONA,
+    SlashCommandCompleter,
+    create_agent,
+    handle_command,
+    is_placeholder_persona,
+    load_persona_text,
+    persona_setup_needed,
+    render_startup_banner,
+    save_local_persona,
+)
 from core.config import AppConfig, AgentSettings, LLMSettings, MemorySettings, PersonaSettings, UISettings
 from core.llm import LLMResponse
 
@@ -90,6 +101,43 @@ def test_create_agent(tmp_path, mocker):
     agent, emotion = create_agent(config)
     assert agent.llm.model == "test-model"
     assert emotion is not None
+
+
+def test_placeholder_persona_detected():
+    assert is_placeholder_persona("***You can define the characteristics of the agent here.***")
+    assert not is_placeholder_persona("你是一个温柔的树洞")
+
+
+def test_load_persona_uses_private_data_persona(tmp_path):
+    tracked_persona = tmp_path / "persona.md"
+    tracked_persona.write_text("***You can define the characteristics of the agent here.***", encoding="utf-8")
+    config = AppConfig(
+        llm=LLMSettings(model="glm-5.1"),
+        persona=PersonaSettings(path=str(tracked_persona)),
+        memory=MemorySettings(data_dir=str(tmp_path / "data")),
+        agent=AgentSettings(),
+        ui=UISettings(),
+    )
+
+    save_local_persona(config, "你像一个安静的老朋友")
+
+    assert load_persona_text(config) == "你像一个安静的老朋友"
+    assert persona_setup_needed(config) is False
+
+
+def test_load_persona_falls_back_to_default_for_placeholder(tmp_path):
+    tracked_persona = tmp_path / "persona.md"
+    tracked_persona.write_text("***You can define the characteristics of the agent here.***", encoding="utf-8")
+    config = AppConfig(
+        llm=LLMSettings(model="glm-5.1"),
+        persona=PersonaSettings(path=str(tracked_persona)),
+        memory=MemorySettings(data_dir=str(tmp_path / "data")),
+        agent=AgentSettings(),
+        ui=UISettings(),
+    )
+
+    assert load_persona_text(config) == DEFAULT_PERSONA
+    assert persona_setup_needed(config) is True
 
 
 def test_render_startup_banner(mock_agent, capsys):

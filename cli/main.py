@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from functools import lru_cache
+from pathlib import Path
 
 from rich.console import Console
 from rich.panel import Panel
@@ -17,6 +18,8 @@ from core.profile import UserProfile
 
 console = Console()
 APP_VERSION = "0.2.0"
+DEFAULT_PERSONA = "你是一个温暖、安静、可靠的树洞。你不评判，不急着给建议，也不频繁反问。你会先承接用户的情绪和事实，帮用户把感受说清楚、把反复出现的想法记下来。只有在确实需要用户继续展开时，才问一个很短的问题。"
+PERSONA_PLACEHOLDER = "***You can define the characteristics of the agent here.***"
 
 COMMANDS = {
     "/": "显示可用命令",
@@ -94,6 +97,69 @@ def read_user_input_with_config(ui_config) -> str:
     return value
 
 
+def is_placeholder_persona(text: str) -> bool:
+    """Return True if persona.md still contains the shipped placeholder."""
+    normalized = text.strip().lower()
+    return not normalized or normalized == PERSONA_PLACEHOLDER.lower()
+
+
+def local_persona_path(config: AppConfig) -> Path:
+    """User-defined persona lives in ignored runtime data, not tracked config."""
+    return Path(config.memory.data_dir) / "persona.md"
+
+
+def load_persona_text(config: AppConfig) -> str:
+    """Load private user persona first, then tracked template, then default."""
+    private_path = local_persona_path(config)
+    if private_path.exists():
+        private_text = private_path.read_text(encoding="utf-8").strip()
+        if not is_placeholder_persona(private_text):
+            return private_text
+
+    configured_path = Path(config.persona.path)
+    if configured_path.exists():
+        configured_text = configured_path.read_text(encoding="utf-8").strip()
+        if not is_placeholder_persona(configured_text):
+            return configured_text
+
+    return DEFAULT_PERSONA
+
+
+def persona_setup_needed(config: AppConfig) -> bool:
+    """Whether first-run setup should ask the user for a treehole personality."""
+    return not local_persona_path(config).exists() and is_placeholder_persona(
+        Path(config.persona.path).read_text(encoding="utf-8")
+        if Path(config.persona.path).exists()
+        else ""
+    )
+
+
+def save_local_persona(config: AppConfig, persona_text: str) -> Path:
+    """Persist the user's private treehole personality under ignored data/."""
+    path = local_persona_path(config)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(persona_text.strip() + "\n", encoding="utf-8")
+    return path
+
+
+def maybe_run_persona_setup(config: AppConfig) -> None:
+    """Prompt for a private treehole personality on first CLI startup."""
+    if not persona_setup_needed(config):
+        return
+
+    console.print(Panel(
+        "第一次使用前，可以先定义这个树洞的性格。\n\n"
+        "比如：温柔但不说教、像老朋友、少给建议、少反问、先承接感受。\n"
+        "直接回车会使用默认温暖倾听风格。",
+        title="定义你的树洞",
+        border_style="cyan",
+    ))
+    persona_text = console.input("[bold cyan]树洞性格:[/bold cyan] ").strip()
+    if persona_text:
+        save_local_persona(config, persona_text)
+        console.print("[dim]已保存。性格设定和之后的一切记忆都会留在本地。[/dim]\n")
+
+
 def handle_command(user_input: str, agent: Agent) -> bool | None:
     """Handle slash commands. Returns False to quit, None to continue."""
     if not user_input.startswith(("/", "\\")):
@@ -161,7 +227,6 @@ def handle_command(user_input: str, agent: Agent) -> bool | None:
             lines = [
                 f"心情: {state.mood_label} ({state.mood_value}/100) {state.mood_hearts}",
                 f"羁绊: Lv.{state.bond_level} {state.bond_name}",
-                f"精力: {state.energy}/100",
             ]
             console.print(Panel("\n".join(lines), title="情感状态", border_style="magenta"))
         else:
@@ -193,16 +258,8 @@ def create_agent(config: AppConfig | None = None) -> tuple[Agent, EmotionEngine]
         bond_path=config.memory.data_dir.rstrip("/") + "/bond.json",
     )
 
-    # Load persona
-    from pathlib import Path
-    persona_path = config.persona.path
-    if Path(persona_path).exists():
-        persona_text = Path(persona_path).read_text(encoding="utf-8").strip()
-    else:
-        persona_text = "你是一个温暖的倾听者。你不评判，不建议，只是认真地听用户说话，记住他们告诉你的每一件重要的事。偶尔追问一句「后来呢？」"
-
     context = ContextManager(
-        persona=persona_text,
+        persona=load_persona_text(config),
         memory=memory,
         profile=profile,
         model_name=llm.model,
@@ -237,7 +294,7 @@ def generate_greeting(llm, profile: UserProfile, memory: FileMemory) -> str | No
     messages = [
         {"role": "system", "content": (
             "你是一个温暖的AI树洞。根据用户的记忆和未闭环事件，生成一段简短自然的问候。\n"
-            "要求：1-2句话，自然亲切，像朋友一样问起之前的事。不要列清单。"
+            "要求：1-2句话，自然亲切，不要列清单。不要连续提问，最多问一个短问题；也可以只表达记得和陪伴。"
         )},
         {"role": "user", "content": "\n\n".join(context_parts)},
     ]
@@ -271,6 +328,7 @@ def render_startup_banner(agent: Agent, config: AppConfig) -> None:
 def main():
     """Entry point for CLI."""
     config = AppConfig.from_file()
+    maybe_run_persona_setup(config)
     agent, emotion = create_agent(config)
     render_startup_banner(agent, config)
 

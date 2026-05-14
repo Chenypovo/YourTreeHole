@@ -76,11 +76,6 @@ class EmotionEngine:
         else:
             parts.append("你很不开心，回复会很少。")
 
-        if state.energy < 20:
-            parts.append("你有点累了，回复简短一些。")
-        elif state.energy >= 80:
-            parts.append("精力充沛。")
-
         return " ".join(parts)
 
     def rest(self) -> int:

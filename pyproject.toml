@@ -1,14 +1,17 @@
 [project]
 name = "myagent"
 version = "0.2.0"
-description = "Treehole — an AI that never forgets you"
+description = "A local-first AI treehole with long-term memory"
 requires-python = ">=3.11"
+license = "MIT"
 dependencies = [
+    "fastapi>=0.115",
     "openai>=1.0",
     "python-dotenv>=1.0",
     "prompt-toolkit>=3.0",
-    "streamlit>=1.30",
+    "sse-starlette>=2.1",
     "rich>=13.0",
+    "uvicorn>=0.30",
 ]
 
 [project.optional-dependencies]

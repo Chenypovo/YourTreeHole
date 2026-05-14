@@ -88,3 +88,15 @@ class TestLLMClient:
 
         client = LLMClient.from_settings(LLMSettings(model="config-model"))
         assert client.model == "config-model"
+
+    def test_from_settings_prefers_configured_base_url(self, mocker):
+        mock_openai = mocker.patch("core.llm.OpenAI")
+        mocker.patch.dict("os.environ", {
+            "OPENAI_BASE_URL": "http://env-base",
+            "OPENAI_API_KEY": "test-key",
+            "OPENAI_MODEL": "env-model",
+        })
+
+        LLMClient.from_settings(LLMSettings(base_url="http://config-base"))
+
+        assert mock_openai.call_args.kwargs["base_url"] == "http://config-base"

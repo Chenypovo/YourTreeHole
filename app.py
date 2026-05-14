@@ -1,132 +1,144 @@
-# app.py — Treehole Streamlit 界面
+# app.py — Treehole Web 界面 (FastAPI + 纯前端)
 from __future__ import annotations
 
-import streamlit as st
+import json
+from pathlib import Path
 
-from cli.main import create_agent, generate_greeting
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
+from sse_starlette.sse import EventSourceResponse
+
+from cli.main import (
+    create_agent,
+    generate_greeting,
+    load_persona_text,
+    local_persona_path,
+    persona_setup_needed,
+    save_local_persona,
+)
 from core.config import AppConfig
 
+# ============ 初始化 ============
 
-def init_session_state():
-    """初始化 session state，只跑一次。"""
-    if "agent" not in st.session_state:
-        config = AppConfig.from_file()
-        agent, emotion = create_agent(config)
-        st.session_state.agent = agent
-        st.session_state.emotion = emotion
-        st.session_state.messages = []
+config = AppConfig.from_file()
+agent, emotion = create_agent(config)
 
-        # 生成问候语
-        greeting = generate_greeting(agent.llm, agent.profile, agent.memory)
-        if greeting:
-            st.session_state.messages.append({"role": "assistant", "content": greeting})
+app = FastAPI(title="Treehole")
 
-        # 检查久别重逢
-        if emotion.bond.check_return_after_absence():
-            st.session_state.messages.append({"role": "assistant", "content": "好久不见！"})
+# ============ 前端 HTML ============
 
-        # 同步侧边栏刷新标记
-        st.session_state.sidebar_rerun = False
+HTML_PAGE = Path(__file__).parent / "web" / "index.html"
 
 
-def render_sidebar():
-    """侧边栏：记忆、画像、情绪。"""
-    agent = st.session_state.agent
-    emotion = st.session_state.emotion
-
-    with st.sidebar:
-        st.header("记忆管理")
-
-        # 手动添加记忆
-        with st.form("add_memory", clear_on_submit=True):
-            new_memory = st.text_input("添加记忆", placeholder="输入你想让我记住的事...")
-            if st.form_submit_button("记住"):
-                if new_memory.strip():
-                    agent.memory.save_memory(new_memory.strip(), category="手动", resolved=True)
-                    st.success(f"已记住: {new_memory.strip()}")
-                    st.rerun()
-
-        st.divider()
-
-        # 记忆列表
-        entries = agent.memory.list_memories()
-        if entries:
-            st.subheader(f"记忆 ({len(entries)})")
-            for i, entry in enumerate(entries, start=1):
-                check = "✅" if entry["resolved"] else "⬜"
-                label = f'{check} [{entry["category"]}] {entry["content"]}'
-                if st.button(f"🗑 {label}", key=f"del_{i}", help=f"删除记忆 #{i}"):
-                    agent.memory.delete_memory(i)
-                    st.rerun()
-        else:
-            st.info("还没有记忆，和我聊聊吧～")
-
-        st.divider()
-
-        # 情绪状态
-        if emotion:
-            state = emotion.get_state()
-            st.subheader("情感状态")
-            st.metric("心情", f"{state.mood_label} {state.mood_hearts}", f"{state.mood_value}/100")
-            st.metric("羁绊", f"Lv.{state.bond_level} {state.bond_name}")
-            st.metric("精力", f"{state.energy}/100")
-
-        st.divider()
-
-        # 用户画像
-        st.subheader("用户画像")
-        profile_text = agent.profile.load()
-        if profile_text:
-            st.markdown(profile_text)
-        else:
-            st.info("画像会在聊天过程中自动更新")
-
-        st.divider()
-
-        # 重置对话
-        if st.button("🔄 重置对话", type="secondary"):
-            agent.memory.clear()
-            st.session_state.messages = []
-            st.rerun()
+@app.get("/", response_class=HTMLResponse)
+async def index():
+    return HTML_PAGE.read_text(encoding="utf-8")
 
 
-def render_chat():
-    """主聊天区域。"""
-    agent = st.session_state.agent
-
-    # 显示历史消息
-    for msg in st.session_state.messages:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
-
-    # 用户输入
-    if prompt := st.chat_input("说点什么..."):
-        # 显示用户消息
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
-
-        # 流式生成助手回复
-        with st.chat_message("assistant"):
-            response = st.write_stream(agent.run_stream(prompt))
-
-        st.session_state.messages.append({"role": "assistant", "content": response})
+# ============ API ============
 
 
-def main():
-    st.set_page_config(
-        page_title="Treehole",
-        page_icon="🌳",
-        layout="wide",
-    )
+@app.get("/api/greeting")
+async def greeting():
+    text = generate_greeting(agent.llm, agent.profile, agent.memory)
+    parts = []
+    if text:
+        parts.append(text)
+    if emotion.bond.check_return_after_absence():
+        parts.append("好久不见！")
+    absent = emotion.bond.check_return_after_absence()
+    return {"text": "\n\n".join(parts) if parts else "你好呀，今天想聊点什么？", "absent": absent}
 
-    st.title("🌳 Treehole")
-    st.caption("一个永远不会忘记你的 AI")
 
-    init_session_state()
-    render_sidebar()
-    render_chat()
+@app.post("/api/chat")
+async def chat(req: Request):
+    body = await req.json()
+    message = body.get("message", "")
 
+    def stream():
+        for token in agent.run_stream(message):
+            yield {"data": json.dumps({"token": token}, ensure_ascii=False)}
+
+    return EventSourceResponse(stream())
+
+
+@app.get("/api/memories")
+async def memories():
+    entries = agent.memory.list_memories()
+    return {"entries": entries, "count": len(entries)}
+
+
+@app.post("/api/memories/add")
+async def add_memory(req: Request):
+    body = await req.json()
+    content = body.get("content", "").strip()
+    if content:
+        agent.memory.save_memory(content, category="手动", resolved=True)
+    return {"ok": True}
+
+
+@app.post("/api/memories/delete")
+async def delete_memory(req: Request):
+    body = await req.json()
+    idx = body.get("index")
+    try:
+        agent.memory.delete_memory(idx)
+        return {"ok": True}
+    except (ValueError, IndexError) as e:
+        return {"ok": False, "error": str(e)}
+
+
+@app.get("/api/profile")
+async def profile():
+    return {"text": agent.profile.load() or ""}
+
+
+@app.get("/api/persona")
+async def persona():
+    return {
+        "text": load_persona_text(config),
+        "needs_setup": persona_setup_needed(config),
+        "path": str(local_persona_path(config)),
+    }
+
+
+@app.post("/api/persona")
+async def save_persona(req: Request):
+    body = await req.json()
+    text = body.get("text", "").strip()
+    if not text:
+        return {"ok": False, "error": "persona text is empty"}
+
+    path = save_local_persona(config, text)
+    agent.context_manager.persona = text
+    return {"ok": True, "path": str(path)}
+
+
+@app.get("/api/emotion")
+async def emotion_state():
+    if not emotion:
+        return {"enabled": False}
+    state = emotion.get_state()
+    return {
+        "enabled": True,
+        "mood_value": state.mood_value,
+        "mood_label": state.mood_label,
+        "mood_hearts": state.mood_hearts,
+        "bond_level": state.bond_level,
+        "bond_name": state.bond_name,
+        "energy": state.energy,
+    }
+
+
+@app.post("/api/reset")
+async def reset():
+    agent.memory.clear()
+    return {"ok": True}
+
+
+# ============ 启动 ============
 
 if __name__ == "__main__":
-    main()
+    import uvicorn
+
+    uvicorn.run(app, host="0.0.0.0", port=7860)

@@ -74,6 +74,13 @@ class ContextManager:
 
     def _build_system_prompt(self, user_input: str) -> str:
         parts = [self._persona]
+        parts.append(
+            "\n\n## 回复方式:\n"
+            "- 这是树洞，不是访谈。先承接用户的情绪和事实，不要每轮结尾都反问。\n"
+            "- 默认用陈述、复述、整理来回应；不要连续提出多个问题。\n"
+            "- 只有在确实需要用户继续展开时，最多问一个短问题。\n"
+            "- 避免反复使用「今天想聊点什么」「后来呢」「还有呢」这类模板句。"
+        )
 
         # Inject user profile
         profile_text = self._profile.load()
@@ -83,7 +90,7 @@ class ContextManager:
 
         unresolved = self._memory.get_unresolved_events()
         if unresolved:
-            parts.append("\n\n## 还没闭环、适合自然追问的事:")
+            parts.append("\n\n## 还没闭环、可以在合适时自然提到的事:")
             for mem in unresolved[:10]:
                 parts.append(f"- {mem['content']}")
 

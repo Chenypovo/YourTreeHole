@@ -7,6 +7,7 @@ import tomllib
 
 @dataclass(frozen=True)
 class LLMSettings:
+    base_url: str | None = None
     model: str | None = None
 
 
