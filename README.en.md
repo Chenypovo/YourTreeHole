@@ -1,5 +1,3 @@
-![Murphy Agent](assets/murphy.svg)
-
 # YourTreeHole
 
 [![中文](https://img.shields.io/badge/中文-README-315B46?style=for-the-badge)](README.md)
