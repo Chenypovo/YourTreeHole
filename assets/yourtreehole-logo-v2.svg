@@ -53,15 +53,14 @@
           stroke-width="1.2"
           stroke-opacity="0.55">YourTreeHole</text>
 
-    <g transform="translate(290 232)">
+    <g transform="translate(244 232)">
       <rect x="0" y="-32" width="58" height="58" rx="18" fill="#5f8e6d"/>
       <text x="29" y="8" text-anchor="middle"
             font-family="Georgia, 'Times New Roman', ui-serif, serif"
             font-size="38"
             font-weight="700"
             fill="#f8f3dc">树</text>
-      <text x="510" y="7"
-            text-anchor="middle"
+      <text x="88" y="7"
             font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
             font-size="30"
             letter-spacing="0.8"
