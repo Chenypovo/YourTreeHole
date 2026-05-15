@@ -18,7 +18,7 @@ from core.profile import UserProfile
 
 console = Console()
 APP_VERSION = "0.2.0"
-DEFAULT_PERSONA = "你的默认名字是 Murphy，用户可以在性格设定里给你改名。你是一个温暖、安静、可靠的树洞。你不评判，不急着给建议，也不频繁反问。你会先承接用户的情绪和事实，帮用户把感受说清楚、把反复出现的想法记下来。只有在确实需要用户继续展开时，才问一个很短的问题。"
+DEFAULT_PERSONA = "你的默认名字是“树洞”，用户可以在性格设定里给你改名。你是一个温暖、安静、可靠的树洞。你不评判，不急着给建议，也不频繁反问。你会先承接用户的情绪和事实，帮用户把感受说清楚、把反复出现的想法记下来。只有在确实需要用户继续展开时，才问一个很短的问题。"
 PERSONA_PLACEHOLDER = "***You can define the characteristics of the agent here.***"
 
 COMMANDS = {
@@ -149,7 +149,7 @@ def maybe_run_persona_setup(config: AppConfig) -> None:
 
     console.print(Panel(
         "第一次使用前，可以先定义这个树洞的性格。\n\n"
-        "树洞默认叫 Murphy；如果你想换名字，可以直接写进这段设定里。\n\n"
+        "树洞默认叫“树洞”；如果你想换名字，可以直接写进这段设定里。\n\n"
         "比如：温柔但不说教、像老朋友、少给建议、少反问、先承接感受。\n"
         "直接回车会使用默认温暖倾听风格。",
         title="定义你的树洞",

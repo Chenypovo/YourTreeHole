@@ -22,8 +22,8 @@ class EmotionState:
 
 
 EASTER_EGG_MESSAGES = {
-    "anniversary_7d": "🎉 我们已经连续聊天 7 天了！Murphy 为你写了一首诗...",
-    "diary_unlock": "📖 Murphy 开始写日记了，偶尔会和你分享自己的想法",
+    "anniversary_7d": "🎉 我们已经连续聊天 7 天了！树洞为你写了一首诗...",
+    "diary_unlock": "📖 树洞开始写日记了，偶尔会和你分享自己的想法",
     "secret_unlock": "🔐 你解锁了隐藏命令 /secret",
     "marathon_chat": "💬 今天聊得真开心，好久没这么畅快了",
     "late_night": "🌙 这么晚还不睡？我陪你",

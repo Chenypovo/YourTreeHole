@@ -25,11 +25,11 @@ This is still a personal learning project, not a production-ready product.
 
 ## Examples
 
-When a new session starts, Murphy can remember what the user shared before and naturally ask about recent progress.
+When a new session starts, Treehole can remember what the user shared before and naturally ask about recent progress.
 
 ![Proactive greeting example](assets/examples/proactive-greeting.png)
 
-In normal conversations, Murphy behaves more like a quiet treehole than a task agent.
+In normal conversations, Treehole behaves more like a quiet private space than a task agent.
 
 ![Chat example](assets/examples/chat-example.png)
 
@@ -44,8 +44,8 @@ In normal conversations, Murphy behaves more like a quiet treehole than a task a
 - **Long-term memory**: important information is summarized into `data/memories.md`.
 - **User profile**: stable user information is maintained in `data/user_profile.md`.
 - **Relevant recall**: recent and relevant memories are injected into the model context.
-- **Proactive greeting**: Murphy can mention unresolved events when a new session starts.
-- **Custom persona**: users can define the treehole's personality on first startup.
+- **Proactive greeting**: Treehole can mention unresolved events when a new session starts.
+- **Custom persona**: users can define the treehole's personality on first startup; the default name is "Treehole" and can be changed.
 - **Web memory management**: users can view, manually add, and delete long-term memories from the sidebar.
 - **Telegram adapter**: optional Telegram Bot entrypoint sharing the same local memory.
 

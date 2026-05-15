@@ -448,6 +448,32 @@
     font-weight: 800;
   }
 
+  .topbar-actions {
+    position: relative;
+    z-index: 1;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .language-toggle {
+    padding: 12px 14px;
+    border-radius: 16px;
+    color: var(--moss);
+    cursor: pointer;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.62);
+    box-shadow: var(--soft-shadow);
+    font-size: 12px;
+    font-weight: 850;
+    letter-spacing: 0.08em;
+  }
+
+  .language-toggle:hover {
+    transform: translateY(-1px);
+  }
+
   .messages {
     min-height: 0;
     overflow-y: auto;
@@ -871,6 +897,10 @@
       display: none;
     }
 
+    .topbar-actions {
+      margin-left: auto;
+    }
+
     .main,
     .sidebar {
       border-radius: 26px;
@@ -945,23 +975,23 @@
 <body>
 <div class="persona-modal" id="persona-modal">
   <div class="persona-card">
-    <h2>先定义这个树洞的性格。</h2>
-    <p>树洞默认叫 Murphy；如果你想换名字，可以直接写进这段设定里。你也可以让它像老朋友、像温柔的记录员，或者少说建议、少反问、先承接感受。性格设定和之后的一切记忆都会保存在你的本地。</p>
-    <textarea id="persona-input" placeholder="例如：你的名字叫小树。你是一个温柔但不说教的树洞。你会认真听我说话，少给大道理，少反问，先帮我整理感受和反复出现的想法。"></textarea>
+    <h2 data-i18n="personaTitle">先定义这个树洞的性格。</h2>
+    <p data-i18n="personaBody">树洞默认叫“树洞”；如果你想换名字，可以直接写进这段设定里。你也可以让它像老朋友、像温柔的记录员，或者少说建议、少反问、先承接感受。性格设定和之后的一切记忆都会保存在你的本地。</p>
+    <textarea id="persona-input" data-i18n-placeholder="personaPlaceholder" placeholder="例如：你的名字叫小树。你是一个温柔但不说教的树洞。你会认真听我说话，少给大道理，少反问，先帮我整理感受和反复出现的想法。"></textarea>
     <div class="persona-actions">
-      <button class="skip-btn" onclick="closePersonaModal()">先用默认</button>
-      <button class="save-persona-btn" onclick="savePersona()">保存性格</button>
+      <button class="skip-btn" onclick="closePersonaModal()" data-i18n="useDefault">先用默认</button>
+      <button class="save-persona-btn" onclick="savePersona()" data-i18n="savePersona">保存性格</button>
     </div>
   </div>
 </div>
 
 <div class="confirm-modal" id="reset-confirm-modal">
   <div class="confirm-card">
-    <h2>确认重置当前对话？</h2>
-    <p>只会清空当前页面里的聊天记录。长期记忆、原始日记和用户画像都会继续保存在本地。</p>
+    <h2 data-i18n="resetTitle">确认重置当前对话？</h2>
+    <p data-i18n="resetBody">只会清空当前页面里的聊天记录。长期记忆、原始日记和用户画像都会继续保存在本地。</p>
     <div class="confirm-actions">
-      <button class="cancel-reset-btn" onclick="closeResetConfirm()">取消</button>
-      <button class="confirm-reset-btn" onclick="confirmResetChat()">确认重置</button>
+      <button class="cancel-reset-btn" onclick="closeResetConfirm()" data-i18n="cancel">取消</button>
+      <button class="confirm-reset-btn" onclick="confirmResetChat()" data-i18n="confirmReset">确认重置</button>
     </div>
   </div>
 </div>
@@ -969,12 +999,12 @@
 <div class="app">
   <aside class="sidebar" id="sidebar">
     <div class="brand-card">
-      <div class="eyebrow">Private Memory Space</div>
+      <div class="eyebrow" data-i18n="eyebrow">Private Memory Space</div>
       <div class="brand-row">
         <div class="sigil">树</div>
         <div>
           <h1 class="brand-title">Treehole</h1>
-          <p class="brand-subtitle">把散落的想法，安静地存下来。</p>
+          <p class="brand-subtitle" data-i18n="brandSubtitle">把散落的想法，安静地存下来。</p>
         </div>
       </div>
     </div>
@@ -982,24 +1012,24 @@
     <div class="sidebar-scroll">
       <section class="panel">
         <div class="panel-title">
-          <span>Memory Fragments</span>
+          <span data-i18n="memoryFragments">Memory Fragments</span>
           <span class="count-pill" id="memory-count">0</span>
         </div>
         <div class="memory-list" id="memories-list">
-          <div class="memory-empty">正在读取记忆...</div>
+          <div class="memory-empty" data-i18n="loadingMemories">正在读取记忆...</div>
         </div>
         <div class="add-memory">
-          <input type="text" id="add-memory-input" placeholder="手动写入一条记忆" onkeydown="handleMemoryKey(event)">
-          <button class="remember-btn" onclick="addMemory()">记住</button>
+          <input type="text" id="add-memory-input" data-i18n-placeholder="addMemoryPlaceholder" placeholder="手动写入一条记忆" onkeydown="handleMemoryKey(event)">
+          <button class="remember-btn" onclick="addMemory()" data-i18n="remember">记住</button>
         </div>
       </section>
 
       <section class="panel">
         <div class="panel-title">
-          <span>User Portrait</span>
+          <span data-i18n="userPortrait">User Portrait</span>
           <span class="count-pill">profile</span>
         </div>
-        <div class="profile-content" id="profile-content">加载中...</div>
+        <div class="profile-content" id="profile-content" data-i18n="loading">加载中...</div>
       </section>
     </div>
   </aside>
@@ -1012,11 +1042,14 @@
         <div class="title-block">
           <button class="mobile-menu" onclick="toggleSidebar()">☰</button>
           <div class="title-copy">
-            <h1>把今天放在这里。</h1>
-            <p>Murphy 会保存原始日记，也会整理出真正重要的长期记忆。</p>
+            <h1 data-i18n="heroTitle">把今天放在这里。</h1>
+            <p data-i18n="heroSubtitle">树洞会保存原始日记，也会整理出真正重要的长期记忆。</p>
           </div>
         </div>
-        <button class="reset-btn" onclick="showResetConfirm()">重置当前对话</button>
+        <div class="topbar-actions">
+          <button class="language-toggle" id="language-toggle" onclick="toggleLanguage()" aria-label="Switch language">EN</button>
+          <button class="reset-btn" onclick="showResetConfirm()" data-i18n="resetChat">重置当前对话</button>
+        </div>
       </div>
     </header>
 
@@ -1024,8 +1057,8 @@
       <div class="empty-state" id="empty-state">
         <div class="empty-card">
           <div class="empty-mark">树</div>
-          <h2>这里不会催你。</h2>
-          <p>你可以只写一句话，也可以把一整段乱糟糟的想法丢进来。它会被本地保存，然后慢慢整理成关于你的记忆。</p>
+          <h2 data-i18n="emptyTitle">这里不会催你。</h2>
+          <p data-i18n="emptyBody">你可以只写一句话，也可以把一整段乱糟糟的想法丢进来。它会被本地保存，然后慢慢整理成关于你的记忆。</p>
         </div>
       </div>
     </section>
@@ -1033,13 +1066,13 @@
     <footer class="composer-shell">
       <div class="composer">
         <div class="input-frame">
-          <textarea id="user-input" placeholder="写下此刻最真实的一句话..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+          <textarea id="user-input" data-i18n-placeholder="inputPlaceholder" placeholder="写下此刻最真实的一句话..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
         </div>
-        <button class="send-btn" id="send-btn" onclick="sendMessage()" aria-label="发送">➜</button>
+        <button class="send-btn" id="send-btn" onclick="sendMessage()" aria-label="发送" data-i18n-aria-label="send">➜</button>
       </div>
       <div class="hint-row">
-        <span>Enter 发送，Shift + Enter 换行</span>
-        <span>一切记忆都会保存在你的本地</span>
+        <span data-i18n="inputHint">Enter 发送，Shift + Enter 换行</span>
+        <span data-i18n="localHint">一切记忆都会保存在你的本地</span>
       </div>
     </footer>
   </main>
@@ -1050,20 +1083,136 @@ const messagesEl = document.getElementById("messages");
 const inputEl = document.getElementById("user-input");
 const sendBtn = document.getElementById("send-btn");
 let sending = false;
+const savedLang = localStorage.getItem("treehole-lang");
+let currentLang = ["zh", "en"].includes(savedLang)
+  ? savedLang
+  : ((navigator.language || "").toLowerCase().startsWith("en") ? "en" : "zh");
+
+const I18N = {
+  zh: {
+    personaTitle: "先定义这个树洞的性格。",
+    personaBody: "树洞默认叫“树洞”；如果你想换名字，可以直接写进这段设定里。你也可以让它像老朋友、像温柔的记录员，或者少说建议、少反问、先承接感受。性格设定和之后的一切记忆都会保存在你的本地。",
+    personaPlaceholder: "例如：你的名字叫小树。你是一个温柔但不说教的树洞。你会认真听我说话，少给大道理，少反问，先帮我整理感受和反复出现的想法。",
+    personaDefault: "你的名字默认叫“树洞”；如果我给你改名，请使用我指定的名字。你是一个温柔但不说教的树洞。你会认真听我说话，少给大道理，少反问，先帮我整理感受和反复出现的想法。",
+    useDefault: "先用默认",
+    savePersona: "保存性格",
+    resetTitle: "确认重置当前对话？",
+    resetBody: "只会清空当前页面里的聊天记录。长期记忆、原始日记和用户画像都会继续保存在本地。",
+    cancel: "取消",
+    confirmReset: "确认重置",
+    eyebrow: "Private Memory Space",
+    brandSubtitle: "把散落的想法，安静地存下来。",
+    memoryFragments: "Memory Fragments",
+    loadingMemories: "正在读取记忆...",
+    addMemoryPlaceholder: "手动写入一条记忆",
+    remember: "记住",
+    userPortrait: "User Portrait",
+    loading: "加载中...",
+    heroTitle: "把今天放在这里。",
+    heroSubtitle: "树洞会保存原始日记，也会整理出真正重要的长期记忆。",
+    resetChat: "重置当前对话",
+    emptyTitle: "这里不会催你。",
+    emptyBody: "你可以只写一句话，也可以把一整段乱糟糟的想法丢进来。它会被本地保存，然后慢慢整理成关于你的记忆。",
+    inputPlaceholder: "写下此刻最真实的一句话...",
+    send: "发送",
+    inputHint: "Enter 发送，Shift + Enter 换行",
+    localHint: "一切记忆都会保存在你的本地",
+    greetingFallback: "你好呀，今天想把什么放在这里？",
+    memoryEmpty: "还没有长期记忆。聊几句之后，这里会长出第一片叶子。",
+    memoryCategory: "记忆",
+    profileEmpty: "画像会在聊天过程中自动更新。",
+    profileError: "画像暂时读取失败。",
+    noReply: "我在，但这次没有收到完整回复。再试一次。",
+    disconnected: "连接断了一下。你的输入已经显示在这里，可以再试一次。",
+    resetDoneTitle: "当前对话已清空。",
+    resetDoneBody: "长期记忆和原始日记都还在。你可以重新开始说。",
+    deleteMemory: "删除",
+    toggleLabel: "EN",
+  },
+  en: {
+    personaTitle: "Define this treehole's personality first.",
+    personaBody: "The default name is “Treehole”. If you want another name, write it directly into this setting. You can make it feel like an old friend, a gentle recorder, or someone who gives fewer suggestions, asks fewer questions, and receives your feelings first. Personality settings and all future memories stay local.",
+    personaPlaceholder: "Example: Your name is Little Tree. You are a gentle treehole that does not lecture me. You listen carefully, avoid big moral lessons, ask fewer questions, and help me organize feelings and recurring thoughts.",
+    personaDefault: "Your default name is “Treehole”. If I rename you, use the name I specify. You are a gentle treehole that does not lecture me. You listen carefully, avoid big moral lessons, ask fewer questions, and help me organize feelings and recurring thoughts.",
+    useDefault: "Use default",
+    savePersona: "Save persona",
+    resetTitle: "Reset the current conversation?",
+    resetBody: "This only clears the chat shown on this page. Long-term memories, raw journal, and user portrait stay local.",
+    cancel: "Cancel",
+    confirmReset: "Reset",
+    eyebrow: "Private Memory Space",
+    brandSubtitle: "Keep scattered thoughts somewhere quiet.",
+    memoryFragments: "Memory Fragments",
+    loadingMemories: "Loading memories...",
+    addMemoryPlaceholder: "Manually add a memory",
+    remember: "Save",
+    userPortrait: "User Portrait",
+    loading: "Loading...",
+    heroTitle: "Put today here.",
+    heroSubtitle: "Treehole saves the raw journal and distills the long-term memories that matter.",
+    resetChat: "Reset conversation",
+    emptyTitle: "No pressure here.",
+    emptyBody: "Write one sentence, or drop in a messy paragraph. It will be saved locally, then slowly organized into memories about you.",
+    inputPlaceholder: "Write one honest sentence from this moment...",
+    send: "Send",
+    inputHint: "Enter to send, Shift + Enter for newline",
+    localHint: "All memories stay on your local machine",
+    greetingFallback: "Hi, what would you like to put here today?",
+    memoryEmpty: "No long-term memories yet. After a few conversations, the first leaf will grow here.",
+    memoryCategory: "memory",
+    profileEmpty: "The portrait will update automatically as you chat.",
+    profileError: "Could not load the portrait right now.",
+    noReply: "I am here, but did not receive a complete reply this time. Try again.",
+    disconnected: "The connection dropped for a moment. Your input is still shown here; you can try again.",
+    resetDoneTitle: "Current conversation cleared.",
+    resetDoneBody: "Long-term memories and the raw journal are still here. You can start again.",
+    deleteMemory: "Delete",
+    toggleLabel: "中文",
+  },
+};
+
+applyLanguage();
 
 loadGreeting();
 loadMemories();
 loadProfile();
 loadPersonaSetup();
 
+function tr(key) {
+  return I18N[currentLang][key] || I18N.zh[key] || key;
+}
+
+function applyLanguage() {
+  document.documentElement.lang = currentLang === "en" ? "en" : "zh-CN";
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    el.textContent = tr(el.dataset.i18n);
+  });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+    el.placeholder = tr(el.dataset.i18nPlaceholder);
+  });
+  document.querySelectorAll("[data-i18n-aria-label]").forEach((el) => {
+    el.setAttribute("aria-label", tr(el.dataset.i18nAriaLabel));
+  });
+  const toggle = document.getElementById("language-toggle");
+  if (toggle) toggle.textContent = tr("toggleLabel");
+}
+
+function toggleLanguage() {
+  currentLang = currentLang === "zh" ? "en" : "zh";
+  localStorage.setItem("treehole-lang", currentLang);
+  applyLanguage();
+  loadMemories();
+  loadProfile();
+}
+
 async function loadGreeting() {
   try {
     const res = await fetch("/api/greeting");
     const data = await res.json();
-    const greeting = data.text || "你好呀，今天想把什么放在这里？";
+    const greeting = data.text || tr("greetingFallback");
     appendMessage("assistant", greeting);
   } catch (e) {
-    appendMessage("assistant", "你好呀，今天想把什么放在这里？");
+    appendMessage("assistant", tr("greetingFallback"));
   }
 }
 
@@ -1076,7 +1225,7 @@ async function loadMemories() {
 
     const listEl = document.getElementById("memories-list");
     if (!entries.length) {
-      listEl.innerHTML = '<div class="memory-empty">还没有长期记忆。聊几句之后，这里会长出第一片叶子。</div>';
+      listEl.innerHTML = `<div class="memory-empty">${escapeHtml(tr("memoryEmpty"))}</div>`;
       return;
     }
 
@@ -1086,12 +1235,12 @@ async function loadMemories() {
         <article class="memory-item">
           <div>
             <div class="memory-meta">
-              <span class="memory-cat">${escapeHtml(entry.category || "记忆")}</span>
+              <span class="memory-cat">${escapeHtml(entry.category || tr("memoryCategory"))}</span>
               <span class="memory-date">${escapeHtml(entry.date || "")}</span>
             </div>
             <div class="memory-text">${escapeHtml(entry.content || "")}</div>
           </div>
-          <button class="delete-memory" onclick="deleteMemory(${originalIndex})" title="删除">×</button>
+          <button class="delete-memory" onclick="deleteMemory(${originalIndex})" title="${escapeHtml(tr("deleteMemory"))}">×</button>
         </article>
       `;
     }).join("");
@@ -1103,9 +1252,9 @@ async function loadProfile() {
     const res = await fetch("/api/profile");
     const data = await res.json();
     const text = (data.text || "").trim();
-    document.getElementById("profile-content").textContent = text || "画像会在聊天过程中自动更新。";
+    document.getElementById("profile-content").textContent = text || tr("profileEmpty");
   } catch (e) {
-    document.getElementById("profile-content").textContent = "画像暂时读取失败。";
+    document.getElementById("profile-content").textContent = tr("profileError");
   }
 }
 
@@ -1114,7 +1263,7 @@ async function loadPersonaSetup() {
     const res = await fetch("/api/persona");
     const data = await res.json();
     if (!data.needs_setup) return;
-    document.getElementById("persona-input").value = "你的名字默认叫 Murphy；如果我给你改名，请使用我指定的名字。你是一个温柔但不说教的树洞。你会认真听我说话，少给大道理，少反问，先帮我整理感受和反复出现的想法。";
+    document.getElementById("persona-input").value = tr("personaDefault");
     document.getElementById("persona-modal").classList.add("show");
   } catch (e) {}
 }
@@ -1219,10 +1368,10 @@ async function sendMessage() {
     }
 
     if (!full.trim()) {
-      bubble.textContent = "我在，但这次没有收到完整回复。再试一次。";
+      bubble.textContent = tr("noReply");
     }
   } catch (e) {
-    bubble.textContent = "连接断了一下。你的输入已经显示在这里，可以再试一次。";
+    bubble.textContent = tr("disconnected");
   }
 
   await Promise.allSettled([loadMemories(), loadProfile()]);
@@ -1269,8 +1418,8 @@ async function confirmResetChat() {
     <div class="empty-state" id="empty-state">
       <div class="empty-card">
         <div class="empty-mark">树</div>
-        <h2>当前对话已清空。</h2>
-        <p>长期记忆和原始日记都还在。你可以重新开始说。</p>
+        <h2>${escapeHtml(tr("resetDoneTitle"))}</h2>
+        <p>${escapeHtml(tr("resetDoneBody"))}</p>
       </div>
     </div>
   `;
