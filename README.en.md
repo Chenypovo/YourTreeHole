@@ -2,7 +2,7 @@
 
 # YourTreeHole
 
-[![中文](https://img.shields.io/badge/中文-README-315B46?style=for-the-badge)](README.md)
+[![中文](https://img.shields.io/badge/中文-README-315B46.svg)](README.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-315B46.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-315B46.svg)](pyproject.toml)
 [![CI](https://github.com/Chenypovo/YourTreeHole/actions/workflows/ci.yml/badge.svg)](https://github.com/Chenypovo/YourTreeHole/actions/workflows/ci.yml)
