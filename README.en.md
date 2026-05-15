@@ -84,6 +84,20 @@ Then open:
 http://127.0.0.1:7860/
 ```
 
+### Docker (Recommended)
+
+Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) first.
+
+```bash
+git clone https://github.com/Chenypovo/YourTreeHole.git
+cd YourTreeHole
+cp .env.example .env
+# Edit .env with your API key
+docker compose up -d
+```
+
+Open `http://localhost:7860`. Conversation data is persisted in the local `data/` directory, so it survives container restarts.
+
 ## Configuration
 
 Non-secret settings live in `config/settings.toml`:
