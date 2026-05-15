@@ -84,6 +84,20 @@ python app.py
 http://127.0.0.1:7860/
 ```
 
+### Docker（推荐）
+
+需要先安装 [Docker Desktop](https://www.docker.com/products/docker-desktop/)。
+
+```bash
+git clone https://github.com/Chenypovo/YourTreeHole.git
+cd YourTreeHole
+cp .env.example .env
+# 编辑 .env 填入你的 API key
+docker compose up -d
+```
+
+打开 `http://localhost:7860`。对话数据保存在本地 `data/` 目录，重启不丢失。
+
 ## 配置
 
 非敏感配置放在 `config/settings.toml`：
