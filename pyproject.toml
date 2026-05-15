@@ -19,13 +19,17 @@ dev = [
     "pytest>=8.0",
     "pytest-mock>=3.12",
 ]
+telegram = [
+    "python-telegram-bot>=20.0",
+]
 
 [project.scripts]
 myagent = "cli.main:main"
 murphy = "cli.main:main"
+treehole-telegram = "bot.telegram_bot:main"
 
 [tool.setuptools.packages.find]
-include = ["cli", "cli.*", "core", "core.*"]
+include = ["bot", "bot.*", "cli", "cli.*", "core", "core.*"]
 exclude = ["data", "data.*", "config", "config.*", "docs", "docs.*", "tests", "tests.*"]
 
 [build-system]

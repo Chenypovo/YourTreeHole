@@ -22,6 +22,11 @@ profile_update_interval = 10
 [ui]
 show_input_rules = false
 input_prompt = ">>> "
+
+[telegram]
+enabled = true
+allowed_user_ids = [123, 456]
+reply_mode = "final"
 """.strip(),
         encoding="utf-8",
     )
@@ -36,6 +41,9 @@ input_prompt = ">>> "
     assert config.memory.profile_update_interval == 10
     assert config.ui.show_input_rules is False
     assert config.ui.input_prompt == ">>> "
+    assert config.telegram.enabled is True
+    assert config.telegram.allowed_user_ids == [123, 456]
+    assert config.telegram.reply_mode == "final"
 
 
 def test_app_config_uses_defaults_when_missing(tmp_path):
@@ -47,3 +55,5 @@ def test_app_config_uses_defaults_when_missing(tmp_path):
     assert config.memory.data_dir == "./data"
     assert config.memory.enable_gating is True
     assert config.memory.profile_update_interval == 5
+    assert config.telegram.enabled is False
+    assert config.telegram.allowed_user_ids == []

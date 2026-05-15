@@ -47,6 +47,7 @@ In normal conversations, Murphy behaves more like a quiet treehole than a task a
 - **Proactive greeting**: Murphy can mention unresolved events when a new session starts.
 - **Custom persona**: users can define the treehole's personality on first startup.
 - **Web memory management**: users can view, manually add, and delete long-term memories from the sidebar.
+- **Telegram adapter**: optional Telegram Bot entrypoint sharing the same local memory.
 
 ## Quick Start
 
@@ -99,7 +100,43 @@ path = "persona.md"
 data_dir = "./data"
 enable_gating = true
 profile_update_interval = 5
+
+[telegram]
+enabled = false
+allowed_user_ids = []
+reply_mode = "final"
 ```
+
+## Telegram Bot (Optional)
+
+The Telegram entrypoint is disabled by default and requires an explicit user allowlist, so strangers cannot write into your local memory store.
+
+```bash
+pip install -e ".[telegram]"
+```
+
+Put your BotFather token in `.env`:
+
+```env
+TELEGRAM_BOT_TOKEN=your-telegram-bot-token-here
+```
+
+Enable Telegram and add your numeric Telegram user id in `config/settings.toml`:
+
+```toml
+[telegram]
+enabled = true
+allowed_user_ids = [123456789]
+reply_mode = "final"
+```
+
+Start it:
+
+```bash
+treehole-telegram
+```
+
+The Telegram adapter is currently a single-user private treehole. It supports `/memories`, `/remember`, `/forget`, `/profile`, and `/reset confirm`.
 
 ## Local Data
 

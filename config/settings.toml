@@ -18,3 +18,10 @@ profile_update_interval = 5
 show_input_rules = true
 input_prompt = "❯ "
 input_rule_color = "cyan"
+
+[telegram]
+enabled = false
+# Fill this with your own numeric Telegram user id before enabling the bot.
+# allowed_user_ids = [123456789]
+allowed_user_ids = []
+reply_mode = "final"

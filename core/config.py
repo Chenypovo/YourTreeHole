@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 import tomllib
 
@@ -36,12 +36,20 @@ class UISettings:
 
 
 @dataclass(frozen=True)
+class TelegramSettings:
+    enabled: bool = False
+    allowed_user_ids: list[int] = field(default_factory=list)
+    reply_mode: str = "final"
+
+
+@dataclass(frozen=True)
 class AppConfig:
     llm: LLMSettings
     persona: PersonaSettings
     memory: MemorySettings
     agent: AgentSettings
     ui: UISettings
+    telegram: TelegramSettings = field(default_factory=TelegramSettings)
 
     @classmethod
     def from_file(cls, path: str = "config/settings.toml") -> AppConfig:
@@ -53,6 +61,7 @@ class AppConfig:
             memory=MemorySettings(**raw.get("memory", {})),
             agent=AgentSettings(**raw.get("agent", {})),
             ui=UISettings(**raw.get("ui", {})),
+            telegram=TelegramSettings(**raw.get("telegram", {})),
         )
 
 

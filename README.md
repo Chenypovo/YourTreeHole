@@ -47,6 +47,7 @@ YourTreeHole 是一个学习用的 AI 树洞项目。
 - **主动问候**：启动时可以根据未闭环事件自然问起近况。
 - **自定义人格**：首次使用时可以定义树洞的性格，设定保存在本地。
 - **网页端记忆管理**：可以在侧边栏查看、手动添加、删除长期记忆。
+- **Telegram 接入**：可选 Telegram Bot 入口，和 Web 共享同一套本地记忆。
 
 ## 快速开始
 
@@ -99,7 +100,43 @@ path = "persona.md"
 data_dir = "./data"
 enable_gating = true
 profile_update_interval = 5
+
+[telegram]
+enabled = false
+allowed_user_ids = []
+reply_mode = "final"
 ```
+
+## Telegram Bot（可选）
+
+Telegram 入口默认关闭，并且必须配置用户白名单，避免陌生人把消息写进你的本地记忆。
+
+```bash
+pip install -e ".[telegram]"
+```
+
+在 `.env` 里填入 BotFather 给你的 token：
+
+```env
+TELEGRAM_BOT_TOKEN=your-telegram-bot-token-here
+```
+
+在 `config/settings.toml` 里启用，并填入你自己的 Telegram user id：
+
+```toml
+[telegram]
+enabled = true
+allowed_user_ids = [123456789]
+reply_mode = "final"
+```
+
+启动：
+
+```bash
+treehole-telegram
+```
+
+当前 Telegram 版本只做单用户私人树洞。支持 `/memories`、`/remember`、`/forget`、`/profile`、`/reset confirm`。
 
 ## 本地数据
 
