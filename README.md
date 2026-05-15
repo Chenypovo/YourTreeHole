@@ -25,6 +25,10 @@ YourTreeHole 是一个学习用的 AI 树洞项目。
 
 ## 示例
 
+网页端支持本地记忆、对话和中英切换。
+
+![Web 界面演示](assets/examples/web-language-demo.gif)
+
 重新开启对话时，树洞可以根据之前的记忆主动问起近况。
 
 ![主动问候示例](assets/examples/proactive-greeting.png)

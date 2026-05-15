@@ -25,6 +25,10 @@ This is still a personal learning project, not a production-ready product.
 
 ## Examples
 
+The web UI supports local memory, chat, and Chinese/English switching.
+
+![Web UI demo](assets/examples/web-language-demo.gif)
+
 When a new session starts, Treehole can remember what the user shared before and naturally ask about recent progress.
 
 ![Proactive greeting example](assets/examples/proactive-greeting.png)
