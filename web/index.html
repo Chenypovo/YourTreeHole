@@ -730,6 +730,47 @@
     display: grid;
   }
 
+  .settings-modal {
+    position: fixed;
+    z-index: 80;
+    inset: 0;
+    display: none;
+    place-items: center;
+    padding: 24px;
+    background: rgba(29, 43, 35, 0.34);
+    backdrop-filter: blur(8px);
+  }
+
+  .settings-modal.show {
+    display: grid;
+  }
+
+  .settings-fields {
+    display: grid;
+    gap: 6px;
+    margin-top: 18px;
+  }
+
+  .settings-label {
+    color: var(--moss);
+    font-size: 12px;
+    font-weight: 850;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-top: 10px;
+  }
+
+  .settings-fields input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid rgba(49, 91, 70, 0.18);
+    border-radius: 16px;
+    outline: none;
+    color: var(--ink);
+    background: rgba(255, 255, 255, 0.74);
+    font-size: 14px;
+  }
+
   .confirm-modal {
     position: fixed;
     z-index: 70;
@@ -973,6 +1014,24 @@
 </style>
 </head>
 <body>
+<div class="settings-modal" id="settings-modal">
+  <div class="persona-card">
+    <h2 data-i18n="settingsTitle">先配置你的 API Key。</h2>
+    <p data-i18n="settingsBody">树洞需要一个 OpenAI 兼容的 API 才能工作。你的 Key 只会保存在本地，不会上传到任何地方。</p>
+    <div class="settings-fields">
+      <label class="settings-label" data-i18n="settingsBaseUrl">API Base URL</label>
+      <input type="text" id="settings-base-url" data-i18n-placeholder="settingsBaseUrlPlaceholder" placeholder="https://api.openai.com/v1" value="https://api.openai.com/v1">
+      <label class="settings-label" data-i18n="settingsApiKey">API Key</label>
+      <input type="password" id="settings-api-key" data-i18n-placeholder="settingsApiKeyPlaceholder" placeholder="sk-...">
+      <label class="settings-label" data-i18n="settingsModel">Model</label>
+      <input type="text" id="settings-model" data-i18n-placeholder="settingsModelPlaceholder" placeholder="gpt-4.1-mini" value="gpt-4.1-mini">
+    </div>
+    <div class="persona-actions">
+      <button class="save-persona-btn" onclick="saveSettings()" data-i18n="settingsSave">开始使用</button>
+    </div>
+  </div>
+</div>
+
 <div class="persona-modal" id="persona-modal">
   <div class="persona-card">
     <h2 data-i18n="personaTitle">先定义这个树洞的性格。</h2>
@@ -1128,6 +1187,16 @@ const I18N = {
     resetDoneBody: "长期记忆和原始日记都还在。你可以重新开始说。",
     deleteMemory: "删除",
     toggleLabel: "EN",
+    settingsTitle: "先配置你的 API Key。",
+    settingsBody: "树洞需要一个 OpenAI 兼容的 API 才能工作。你的 Key 只会保存在本地，不会上传到任何地方。",
+    settingsBaseUrl: "API Base URL",
+    settingsBaseUrlPlaceholder: "https://api.openai.com/v1",
+    settingsApiKey: "API Key",
+    settingsApiKeyPlaceholder: "sk-...",
+    settingsModel: "Model",
+    settingsModelPlaceholder: "gpt-4.1-mini",
+    settingsSave: "开始使用",
+    settingsError: "配置失败，请检查 Key 和 URL 是否正确。",
   },
   en: {
     personaTitle: "Define this treehole's personality first.",
@@ -1168,12 +1237,58 @@ const I18N = {
     resetDoneBody: "Long-term memories and the raw journal are still here. You can start again.",
     deleteMemory: "Delete",
     toggleLabel: "中文",
+    settingsTitle: "Configure your API Key first.",
+    settingsBody: "Treehole needs an OpenAI-compatible API to work. Your key stays local and is never uploaded.",
+    settingsBaseUrl: "API Base URL",
+    settingsBaseUrlPlaceholder: "https://api.openai.com/v1",
+    settingsApiKey: "API Key",
+    settingsApiKeyPlaceholder: "sk-...",
+    settingsModel: "Model",
+    settingsModelPlaceholder: "gpt-4.1-mini",
+    settingsSave: "Start",
+    settingsError: "Configuration failed. Please check your Key and URL.",
   },
 };
 
 applyLanguage();
 
-loadGreeting();
+checkSettings();
+
+async function checkSettings() {
+  try {
+    const res = await fetch("/api/settings");
+    const data = await res.json();
+    if (!data.configured) {
+      document.getElementById("settings-modal").classList.add("show");
+      return;
+    }
+  } catch (e) {}
+  loadGreeting();
+}
+
+async function saveSettings() {
+  const base_url = document.getElementById("settings-base-url").value.trim();
+  const api_key = document.getElementById("settings-api-key").value.trim();
+  const model = document.getElementById("settings-model").value.trim();
+
+  if (!api_key) return;
+
+  const res = await fetch("/api/settings", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ base_url, api_key, model }),
+  });
+  const data = await res.json();
+  if (data.ok) {
+    document.getElementById("settings-modal").classList.remove("show");
+    loadGreeting();
+    loadMemories();
+    loadProfile();
+    loadPersonaSetup();
+  } else {
+    alert(tr("settingsError") + (data.error ? "\n" + data.error : ""));
+  }
+}
 loadMemories();
 loadProfile();
 loadPersonaSetup();

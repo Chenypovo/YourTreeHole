@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from sse_starlette.sse import EventSourceResponse
@@ -21,9 +23,51 @@ from core.config import AppConfig
 # ============ 初始化 ============
 
 config = AppConfig.from_file()
-agent, emotion = create_agent(config)
-
 app = FastAPI(title="Treehole")
+
+agent = None
+emotion = None
+
+SETTINGS_PATH = Path(config.memory.data_dir) / "settings.json"
+
+
+def _load_settings_from_file() -> dict | None:
+    if SETTINGS_PATH.exists():
+        try:
+            return json.loads(SETTINGS_PATH.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            pass
+    return None
+
+
+def _try_init_agent() -> bool:
+    """Try to create agent from env vars or saved settings. Returns True on success."""
+    global agent, emotion
+    load_dotenv()
+    has_env = bool(os.environ.get("OPENAI_API_KEY"))
+
+    if has_env:
+        try:
+            agent, emotion = create_agent(config)
+            return True
+        except Exception:
+            return False
+
+    saved = _load_settings_from_file()
+    if saved and saved.get("api_key"):
+        os.environ.setdefault("OPENAI_BASE_URL", saved.get("base_url", "https://api.openai.com/v1"))
+        os.environ.setdefault("OPENAI_API_KEY", saved["api_key"])
+        os.environ.setdefault("OPENAI_MODEL", saved.get("model", "gpt-4.1-mini"))
+        try:
+            agent, emotion = create_agent(config)
+            return True
+        except Exception:
+            return False
+
+    return False
+
+
+_try_init_agent()
 
 # ============ 前端 HTML ============
 
@@ -38,20 +82,59 @@ async def index():
 # ============ API ============
 
 
+@app.get("/api/settings")
+async def get_settings():
+    return {"configured": agent is not None}
+
+
+@app.post("/api/settings")
+async def save_settings(req: Request):
+    global agent, emotion
+    body = await req.json()
+    base_url = body.get("base_url", "").strip()
+    api_key = body.get("api_key", "").strip()
+    model = body.get("model", "").strip()
+
+    if not api_key:
+        return {"ok": False, "error": "API key is required"}
+
+    os.environ["OPENAI_BASE_URL"] = base_url or "https://api.openai.com/v1"
+    os.environ["OPENAI_API_KEY"] = api_key
+    os.environ["OPENAI_MODEL"] = model or "gpt-4.1-mini"
+
+    SETTINGS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    SETTINGS_PATH.write_text(json.dumps({
+        "base_url": os.environ["OPENAI_BASE_URL"],
+        "api_key": api_key,
+        "model": os.environ["OPENAI_MODEL"],
+    }, ensure_ascii=False), encoding="utf-8")
+
+    try:
+        agent, emotion = create_agent(config)
+        return {"ok": True}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
 @app.get("/api/greeting")
 async def greeting():
+    if agent is None:
+        return {"text": "你好呀，今天想聊点什么？", "absent": False}
     text = generate_greeting(agent.llm, agent.profile, agent.memory)
     parts = []
     if text:
         parts.append(text)
     if emotion.bond.check_return_after_absence():
         parts.append("好久不见！")
-    absent = emotion.bond.check_return_after_absence()
+    absent = emotion.bond.check_return_after_absence() if emotion else False
     return {"text": "\n\n".join(parts) if parts else "你好呀，今天想聊点什么？", "absent": absent}
 
 
 @app.post("/api/chat")
 async def chat(req: Request):
+    if agent is None:
+        return {"error": "not configured"}
+
     body = await req.json()
     message = body.get("message", "")
 
@@ -64,12 +147,16 @@ async def chat(req: Request):
 
 @app.get("/api/memories")
 async def memories():
+    if agent is None:
+        return {"entries": [], "count": 0}
     entries = agent.memory.list_memories()
     return {"entries": entries, "count": len(entries)}
 
 
 @app.post("/api/memories/add")
 async def add_memory(req: Request):
+    if agent is None:
+        return {"ok": False, "error": "not configured"}
     body = await req.json()
     content = body.get("content", "").strip()
     if content:
@@ -79,6 +166,8 @@ async def add_memory(req: Request):
 
 @app.post("/api/memories/delete")
 async def delete_memory(req: Request):
+    if agent is None:
+        return {"ok": False, "error": "not configured"}
     body = await req.json()
     idx = body.get("index")
     try:
@@ -90,6 +179,8 @@ async def delete_memory(req: Request):
 
 @app.get("/api/profile")
 async def profile():
+    if agent is None:
+        return {"text": ""}
     return {"text": agent.profile.load() or ""}
 
 
@@ -104,6 +195,8 @@ async def persona():
 
 @app.post("/api/persona")
 async def save_persona(req: Request):
+    if agent is None:
+        return {"ok": False, "error": "not configured"}
     body = await req.json()
     text = body.get("text", "").strip()
     if not text:
@@ -132,6 +225,8 @@ async def emotion_state():
 
 @app.post("/api/reset")
 async def reset():
+    if agent is None:
+        return {"ok": False, "error": "not configured"}
     agent.memory.clear()
     return {"ok": True}
 

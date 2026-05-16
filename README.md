@@ -88,6 +88,8 @@ python app.py
 http://127.0.0.1:7860/
 ```
 
+首次打开网页时会弹出配置面板，直接在页面上填入 API Key、Base URL 和模型名称即可，不需要手动编辑 `.env` 文件。
+
 ### Docker（推荐）
 
 需要先安装 [Docker Desktop](https://www.docker.com/products/docker-desktop/)。

@@ -88,6 +88,8 @@ Then open:
 http://127.0.0.1:7860/
 ```
 
+On first visit, a settings panel will appear where you can enter your API Key, Base URL, and model name directly in the browser — no need to manually edit `.env`.
+
 ### Docker (Recommended)
 
 Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) first.
