@@ -29,6 +29,10 @@ YourTreeHole 是一个学习用的 AI 树洞项目。
 
 ![Web 界面演示](assets/examples/web-language-demo.gif)
 
+首次打开时可以直接在浏览器中配置 API Key、Base URL 和模型。
+
+![浏览器配置示例](assets/examples/settings-demo.png)
+
 重新开启对话时，树洞可以根据之前的记忆主动问起近况。
 
 ![主动问候示例](assets/examples/proactive-greeting.png)

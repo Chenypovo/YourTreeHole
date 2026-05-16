@@ -29,6 +29,10 @@ The web UI supports local memory, chat, and Chinese/English switching.
 
 ![Web UI demo](assets/examples/web-language-demo.gif)
 
+On first visit, you can configure your API Key, Base URL, and model directly in the browser.
+
+![Browser settings example](assets/examples/settings-demo.png)
+
 When a new session starts, Treehole can remember what the user shared before and naturally ask about recent progress.
 
 ![Proactive greeting example](assets/examples/proactive-greeting.png)
